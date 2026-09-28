@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Plus, ChevronDown } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { adminCatalogData } from "@/data/adminCatalogData";
 import { ALL_SERVICES } from "@/data/services";
 import { CatalogSummary } from "@/components/admin/services/CatalogSummary";
