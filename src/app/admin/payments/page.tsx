@@ -7,6 +7,9 @@ import { adminPaymentsData, type AdminTransaction } from "@/data/adminPaymentsDa
 import { PaymentDetailsDrawer } from "@/components/admin/payments/PaymentDetailsDrawer";
 import { adminBookingsData, type AdminBooking } from "@/data/adminBookingsData";
 import { BookingDetailsDrawer } from "@/components/admin/bookings/BookingDetailsDrawer";
+import { useEffect } from "react";
+import { db } from "@/backend/firebase";
+import { collection, onSnapshot } from "firebase/firestore";
 
 export default function AdminPaymentsPage() {
   const [activeTab, setActiveTab] = useState("all");
@@ -15,8 +18,90 @@ export default function AdminPaymentsPage() {
   const [selectedTransaction, setSelectedTransaction] = useState<AdminTransaction | null>(null);
   const [selectedBooking, setSelectedBooking] = useState<AdminBooking | null>(null);
   
+  const [transactions, setTransactions] = useState<AdminTransaction[]>([]);
+  const [summary, setSummary] = useState(adminPaymentsData.summary);
+
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, "bookings"), (snap) => {
+      let revenue = 0;
+      let todayRevenue = 0;
+      let successfulPayments = 0;
+      let pendingPayments = 0;
+      let refunds = 0;
+      let vendorPayable = 0;
+
+      const now = new Date();
+      const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+
+      const loadedTxs = snap.docs.map(doc => {
+        const d = doc.data();
+        const amt = d.amountCollected || d.variant?.price || d.amount || d.price || 0;
+        
+        const dateVal = d.createdAt?.toDate ? d.createdAt.toDate() : new Date();
+        const bDate = new Date(dateVal.getFullYear(), dateVal.getMonth(), dateVal.getDate());
+        
+        if (d.status === "completed") {
+          revenue += amt;
+          successfulPayments++;
+          vendorPayable += Math.floor(amt * 0.8);
+          if (bDate.getTime() === startOfToday) todayRevenue += amt;
+        } else if (d.status === "cancelled" || d.status === "rejected") {
+          refunds += amt;
+        } else {
+          pendingPayments++;
+        }
+
+        return {
+          id: "TXN-" + doc.id.substring(0, 6).toUpperCase(),
+          paymentId: "PAY-" + doc.id.substring(0, 6).toUpperCase(),
+          bookingId: doc.id.substring(0, 8).toUpperCase(),
+          customer: {
+            id: d.userId || d.customerId || "Unknown",
+            name: d.userName || "Customer",
+            email: "N/A",
+            phone: d.address?.phone || d.phone || "N/A"
+          },
+          vendor: {
+            id: d.vendorId || "Unknown",
+            name: d.professional || "Unassigned",
+            verificationStatus: "verified" as const
+          },
+          serviceName: d.serviceName || d.service || "Service",
+          packageName: d.variant?.name || "Standard",
+          paymentMethod: (d.paymentMethod || "upi") as any,
+          transactionType: "payment" as const,
+          status: (d.status === "completed" ? "paid" : d.status === "cancelled" ? "refunded" : "pending") as any,
+          amount: amt,
+          platformFee: Math.floor(amt * 0.2),
+          financialBreakdown: {
+            servicePrice: amt,
+            addOns: 0,
+            discount: 0,
+            tax: 0,
+            customerPaid: amt,
+            platformFee: Math.floor(amt * 0.2),
+            vendorEarning: Math.floor(amt * 0.8),
+            refundAmount: d.status === "cancelled" ? amt : 0,
+            finalSettlement: Math.floor(amt * 0.8)
+          },
+          timeline: [],
+          createdAt: dateVal.toISOString(),
+          updatedAt: new Date().toISOString(),
+          _time: dateVal.getTime()
+        } as AdminTransaction & { _time: number };
+      });
+
+      loadedTxs.sort((a, b) => b._time - a._time);
+
+      setTransactions(loadedTxs);
+      setSummary({ revenue, todayRevenue, successfulPayments, pendingPayments, refunds, vendorPayable });
+    });
+
+    return () => unsub();
+  }, []);
+
   const filteredTransactions = useMemo(() => {
-    let result = adminPaymentsData.transactions;
+    let result = transactions;
     if (activeTab !== "all") {
       result = result.filter(tx => tx.status === activeTab);
     }
@@ -30,7 +115,7 @@ export default function AdminPaymentsPage() {
       );
     }
     return result;
-  }, [activeTab, searchQuery]);
+  }, [activeTab, searchQuery, transactions]);
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in duration-500 pb-12">
@@ -55,12 +140,12 @@ export default function AdminPaymentsPage() {
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
         {[
-          { label: "Total Revenue", value: `₹${(adminPaymentsData.summary.revenue/100000).toFixed(2)}L` },
-          { label: "Today's Revenue", value: `₹${adminPaymentsData.summary.todayRevenue.toLocaleString()}`, highlight: "text-emerald-600" },
-          { label: "Successful Payments", value: adminPaymentsData.summary.successfulPayments.toLocaleString() },
-          { label: "Pending Payments", value: adminPaymentsData.summary.pendingPayments },
-          { label: "Refunds", value: `₹${adminPaymentsData.summary.refunds.toLocaleString()}`, highlight: "text-rose-600" },
-          { label: "Vendor Payable", value: `₹${(adminPaymentsData.summary.vendorPayable/100000).toFixed(2)}L` },
+          { label: "Total Revenue", value: `₹${(summary.revenue/100000).toFixed(2)}L` },
+          { label: "Today's Revenue", value: `₹${summary.todayRevenue.toLocaleString()}`, highlight: "text-emerald-600" },
+          { label: "Successful Payments", value: summary.successfulPayments.toLocaleString() },
+          { label: "Pending Payments", value: summary.pendingPayments },
+          { label: "Refunds", value: `₹${summary.refunds.toLocaleString()}`, highlight: "text-rose-600" },
+          { label: "Vendor Payable", value: `₹${(summary.vendorPayable/100000).toFixed(2)}L` },
         ].map((stat, i) => (
           <div key={i} className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
             <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">{stat.label}</p>
