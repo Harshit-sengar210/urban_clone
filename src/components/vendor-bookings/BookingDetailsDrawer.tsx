@@ -27,6 +27,8 @@ const statusConfig: Record<BookingStatus, { label: string, color: string, bg: st
   cancelled: { label: "Cancelled", color: "text-red-700", bg: "bg-red-100", dot: "bg-red-500" },
   rejected: { label: "Rejected", color: "text-red-700", bg: "bg-red-100", dot: "bg-red-500" },
   rescheduled: { label: "Rescheduled", color: "text-purple-700", bg: "bg-purple-100", dot: "bg-purple-500" },
+  assigned: { label: "Assigned", color: "text-blue-700", bg: "bg-blue-100", dot: "bg-blue-500" },
+  pending_payment: { label: "Pending Payment", color: "text-rose-700", bg: "bg-rose-100", dot: "bg-rose-500" },
 };
 
 const TIMELINE_STEPS = [

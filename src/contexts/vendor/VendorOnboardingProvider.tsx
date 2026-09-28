@@ -75,7 +75,7 @@ export function VendorOnboardingProvider({ children }: { children: ReactNode }) 
       
       if (status === "approved" && !pathname.startsWith("/vendor/dashboard")) {
         router.replace("/vendor/dashboard");
-      } else if ((status === "submitted" || status === "pending_approval") && !pathname.startsWith("/vendor/onboarding/pending")) {
+      } else if (status === "pending_approval" && !pathname.startsWith("/vendor/onboarding/pending")) {
         router.replace("/vendor/onboarding/pending");
       }
     }

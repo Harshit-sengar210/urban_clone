@@ -17,7 +17,7 @@ export function UsersSummaryCards({ summary }: { summary: typeof adminUsersData.
       {summary.map((stat, i) => {
         const Icon = iconMap[stat.icon] || Users;
         const isPositive = stat.trend === "up";
-        const isNeutral = stat.trend === "neutral";
+        const isNeutral = (stat.trend as string) === "neutral";
 
         return (
           <motion.div

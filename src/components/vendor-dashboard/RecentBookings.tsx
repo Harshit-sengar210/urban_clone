@@ -7,13 +7,17 @@ import { BookingRequest, BookingStatus } from "@/types/vendor";
 import { cn } from "@/lib/utils";
 
 const StatusBadge = ({ status }: { status: BookingStatus }) => {
-  const styles = {
+  const styles: Record<BookingStatus, string> = {
     pending: "bg-amber-100 text-amber-700",
     confirmed: "bg-indigo-100 text-indigo-700",
     in_progress: "bg-blue-100 text-blue-700",
     completed: "bg-emerald-100 text-emerald-700",
     cancelled: "bg-slate-100 text-slate-600",
     rejected: "bg-red-100 text-red-700",
+    assigned: "bg-blue-100 text-blue-700",
+    on_the_way: "bg-sky-100 text-sky-700",
+    rescheduled: "bg-yellow-100 text-yellow-700",
+    pending_payment: "bg-rose-100 text-rose-700",
   };
 
   return (

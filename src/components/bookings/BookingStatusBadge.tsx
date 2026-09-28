@@ -13,6 +13,7 @@ const STATUS_MAP: Record<BookingStatus, { label: string; cls: string }> = {
   rescheduled:     { label: "Rescheduled",     cls: "bg-yellow-50 text-yellow-700 border-yellow-100" },
   pending_payment: { label: "Pending Payment", cls: "bg-rose-50   text-rose-700   border-rose-100" },
   pending:         { label: "Pending",         cls: "bg-gray-50   text-gray-700   border-gray-100" },
+  rejected:        { label: "Rejected",        cls: "bg-red-100   text-red-800    border-red-200" },
 };
 
 interface BookingStatusBadgeProps {

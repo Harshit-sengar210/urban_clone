@@ -28,6 +28,8 @@ const statusConfig: Record<BookingStatus, { label: string, color: string, bg: st
   rejected: { label: "Rejected", color: "text-red-700", bg: "bg-red-100", dot: "bg-red-500" },
   on_the_way: { label: "On The Way", color: "text-sky-700", bg: "bg-sky-100", dot: "bg-sky-500" },
   rescheduled: { label: "Rescheduled", color: "text-purple-700", bg: "bg-purple-100", dot: "bg-purple-500" },
+  assigned: { label: "Assigned", color: "text-blue-700", bg: "bg-blue-100", dot: "bg-blue-500" },
+  pending_payment: { label: "Pending Payment", color: "text-rose-700", bg: "bg-rose-100", dot: "bg-rose-500" },
 };
 
 export function BookingList({

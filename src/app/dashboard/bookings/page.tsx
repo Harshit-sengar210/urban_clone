@@ -21,7 +21,7 @@ import { db } from "@/backend/firebase";
 
 const TAB_STATUS_MAP: Record<string, BookingStatus[]> = {
   all:         [],
-  upcoming:    ["confirmed", "assigned", "rescheduled", "scheduled"],
+  upcoming:    ["confirmed", "assigned", "rescheduled"],
   in_progress: ["on_the_way", "in_progress"],
   completed:   ["completed"],
   cancelled:   ["cancelled", "pending_payment"],

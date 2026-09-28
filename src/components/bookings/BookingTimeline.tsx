@@ -15,12 +15,14 @@ const STEPS = [
 ];
 
 const STATUS_PROGRESS: Record<BookingStatus, number> = {
+  pending:         0,
   confirmed:       0,
   assigned:        1,
   on_the_way:      2,
   in_progress:     4,
   completed:       5,
   cancelled:       -1,
+  rejected:        -1,
   rescheduled:     0,
   pending_payment: 0,
 };

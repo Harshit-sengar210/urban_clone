@@ -45,7 +45,7 @@ const emptyDashboardData = {
 
 export default function VendorDashboard() {
   const { user } = useCurrentUser();
-  const [data, setData] = useState(emptyDashboardData);
+  const [data, setData] = useState<any>(emptyDashboardData);
   const [vendorName, setVendorName] = useState("Partner");
   const [toastMessage, setToastMessage] = useState("");
   const [loading, setLoading] = useState(true);
@@ -57,7 +57,7 @@ export default function VendorDashboard() {
     const unsubVendor = onSnapshot(doc(db, "vendorApplications", user.uid), (docSnap) => {
       if (docSnap.exists()) {
         const d = docSnap.data();
-        const name = d.personal?.fullName || d.personal?.legalName || user.displayName || "Partner";
+        const name = d.personal?.fullName || d.personal?.legalName || user.name || "Partner";
         setVendorName(name.split(" ")[0]);
       }
       setLoading(false);
@@ -98,7 +98,7 @@ export default function VendorDashboard() {
         } as BookingRequest;
       });
 
-      setData(prev => ({
+      setData((prev: any) => ({
         ...prev,
         liveBookingRequests: requests
       }));
@@ -131,7 +131,7 @@ export default function VendorDashboard() {
     // Local state updates will happen automatically via the snapshot listener for liveBookingRequests,
     // but we can manually add it to upcoming if we had a listener for it.
     // For now, we manually push to upcomingBookings.
-    setData(prev => ({
+    setData((prev: any) => ({
       ...prev,
       upcomingBookings: [{ ...request, status: "confirmed" }, ...prev.upcomingBookings],
       stats: {
@@ -150,7 +150,7 @@ export default function VendorDashboard() {
     // Note: Usually we wouldn't update the booking status to rejected just because ONE vendor rejected it,
     // we would keep it pending and just hide it for this vendor.
     // For simplicity, we just filter it out locally.
-    setData(prev => ({
+    setData((prev: any) => ({
       ...prev,
       liveBookingRequests: prev.liveBookingRequests.filter((r: BookingRequest) => r.id !== id),
       stats: {

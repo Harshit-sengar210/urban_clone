@@ -1,4 +1,5 @@
 export type BookingStatus =
+  | "pending"
   | "confirmed"
   | "assigned"
   | "on_the_way"
@@ -6,6 +7,7 @@ export type BookingStatus =
   | "completed"
   | "cancelled"
   | "rescheduled"
+  | "rejected"
   | "pending_payment";
 
 export type PaymentStatus = "paid" | "pending" | "refunded" | "failed";

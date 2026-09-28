@@ -173,7 +173,7 @@ export interface FeedbackTheme {
 
 // ─── Booking Types ───────────────────────────────────────────────────────────
 
-export type BookingStatus = "pending" | "confirmed" | "on_the_way" | "in_progress" | "completed" | "cancelled" | "rejected" | "rescheduled";
+export type BookingStatus = "pending" | "confirmed" | "assigned" | "on_the_way" | "in_progress" | "completed" | "cancelled" | "rejected" | "rescheduled" | "pending_payment";
 
 export interface BookingRequest {
   id: string;

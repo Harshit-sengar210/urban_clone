@@ -31,6 +31,7 @@ export interface BookingVendorSnapshot {
   rating: number;
   verificationStatus: "pending" | "verified" | "suspended";
   avatar?: string;
+  phone?: string;
 }
 
 export interface BookingServiceSnapshot {

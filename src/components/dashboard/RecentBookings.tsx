@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { ChevronRight, ExternalLink } from "lucide-react";
 import { BookingStatusBadge } from "@/components/bookings/BookingStatusBadge";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { BookingStatus } from "@/data/bookings";
 import { useEffect, useState } from "react";
 import { collection, query, where, orderBy, limit, onSnapshot } from "firebase/firestore";
 import { db } from "@/backend/firebase";
@@ -15,7 +16,7 @@ interface Booking {
   category: string;
   date: string;
   time: string;
-  status: string;
+  status: BookingStatus;
   amount: number;
 }
 

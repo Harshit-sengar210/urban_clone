@@ -86,7 +86,7 @@ export function UrbanCloneSplash({ onComplete }: { onComplete: () => void }) {
   if (!shouldShow || stage === "complete") return null;
 
   // Premium easing curve
-  const cinematicEase = [0.76, 0, 0.24, 1];
+  const cinematicEase: [number, number, number, number] = [0.76, 0, 0.24, 1];
 
   return (
     <div className="fixed inset-0 z-[9999] flex overflow-hidden pointer-events-none bg-transparent">

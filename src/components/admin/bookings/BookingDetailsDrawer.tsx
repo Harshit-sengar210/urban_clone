@@ -108,7 +108,7 @@ export function BookingDetailsDrawer({
                 </div>
                 <div className="flex items-start gap-2 text-sm text-slate-600">
                   <MapPin className="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0" />
-                  <span>{booking.customer.address}</span>
+                  <span>{booking.address}</span>
                 </div>
               </div>
             </div>
@@ -143,11 +143,11 @@ export function BookingDetailsDrawer({
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between text-slate-600">
                   <span>Subtotal</span>
-                  <span>₹{booking.pricing.subtotal}</span>
+                  <span>₹{booking.pricing.basePrice}</span>
                 </div>
                 <div className="flex justify-between text-slate-600">
                   <span>Taxes</span>
-                  <span>₹{booking.pricing.taxes}</span>
+                  <span>₹{booking.pricing.tax}</span>
                 </div>
                 {booking.pricing.discount > 0 && (
                   <div className="flex justify-between text-emerald-600 font-medium">

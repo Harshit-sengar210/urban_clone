@@ -137,12 +137,12 @@ export function OfferDetailsDrawer({
               <ul className="space-y-3 text-sm text-slate-600">
                 <li className="flex items-center gap-2">
                   <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
-                  Limit 1 use per customer: {offer.eligibility.perUserLimit === 1 ? "Yes" : "No"}
+                  Limit 1 use per customer: {offer.eligibility.maximumUsesPerCustomer === 1 ? "Yes" : "No"}
                 </li>
-                {offer.eligibility.customerType !== 'all' && (
+                {offer.audience !== 'everyone' && (
                   <li className="flex items-center gap-2">
                     <div className="w-1.5 h-1.5 rounded-full bg-[var(--color-primary)]" />
-                    Target Audience: <span className="font-bold text-slate-800 capitalize">{offer.eligibility.customerType} users</span>
+                    Target Audience: <span className="font-bold text-slate-800 capitalize">{offer.audience} users</span>
                   </li>
                 )}
                 {offer.eligibility.minimumOrderValue > 0 && (
