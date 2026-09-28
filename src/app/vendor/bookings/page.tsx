@@ -193,7 +193,7 @@ export default function VendorBookingsPage() {
         return updateDoc(doc(db, "bookings", booking.id), {
           status: "confirmed",
           vendorId: user?.uid,
-          professional: user?.displayName || "Professional",
+          professional: user?.name || "Professional",
         });
       });
     } catch (e) {
@@ -258,7 +258,7 @@ export default function VendorBookingsPage() {
         updateDoc(doc(db, "bookings", actionBooking.booking.id), {
           status: newStatus,
           ...(newStatus === "cancelled" || newStatus === "rejected" ? { cancellationReason: data || "" } : {}),
-          ...(newStatus === "in_progress" || newStatus === "completed" ? { vendorId: user?.uid, professional: user?.displayName || "Professional" } : {}),
+          ...(newStatus === "in_progress" || newStatus === "completed" ? { vendorId: user?.uid, professional: user?.name || "Professional" } : {}),
           ...(newStatus === "completed" && data ? {
             paymentStatus: "paid",
             paymentMethod: data.paymentType === "cash" ? "cod" : "upi",

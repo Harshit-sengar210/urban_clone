@@ -59,8 +59,8 @@ export default function BookingPage({ params }: { params: Promise<{ serviceSlug:
 
   // Sync contact details from user/address
   useEffect(() => {
-    if (!contactName && user?.displayName) setContactName(user.displayName);
-    if (!contactPhone && (user as any)?.phoneNumber) setContactPhone((user as any).phoneNumber);
+    if (!contactName && user?.name) setContactName(user.name);
+    if (!contactPhone && user?.phone) setContactPhone(user.phone);
   }, [user]);
 
   useEffect(() => {
