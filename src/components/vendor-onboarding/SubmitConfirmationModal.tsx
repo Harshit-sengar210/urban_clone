@@ -19,9 +19,10 @@ export function SubmitConfirmationModal({ isOpen, onClose, onSubmit }: SubmitCon
     setIsSubmitting(true);
     try {
       await onSubmit();
-      // On success, the VendorOnboardingProvider will automatically redirect the user
-    } catch (e) {
+      router.replace("/vendor/onboarding/pending");
+    } catch (e: any) {
       console.error(e);
+      alert("Failed to submit: " + (e.message || "Unknown error"));
       setIsSubmitting(false);
     }
   };
