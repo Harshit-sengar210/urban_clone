@@ -178,6 +178,8 @@ export default function VendorReviewsPage() {
         }
       };
     });
+  };
+
   const serviceOptions = serviceRatings.map(s => ({ id: s.serviceId, name: s.serviceName }));
 
   return (
