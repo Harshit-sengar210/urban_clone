@@ -66,7 +66,8 @@ export function BookingDetailsDrawer({
     if (!booking) return "pending";
     if (booking.status === "cancelled" || booking.status === "rejected") return "inactive";
 
-    const currentIndex = TIMELINE_STEPS.findIndex(s => s.id === booking.status);
+    const mappedStatus = booking.status === "assigned" ? "confirmed" : booking.status;
+    const currentIndex = TIMELINE_STEPS.findIndex(s => s.id === mappedStatus);
     const stepIndex = TIMELINE_STEPS.findIndex(s => s.id === stepId);
 
     if (stepIndex < currentIndex) return "completed";

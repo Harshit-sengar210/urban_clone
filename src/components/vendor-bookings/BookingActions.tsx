@@ -110,7 +110,7 @@ export function BookingActions({
               </>
             )}
 
-            {booking.status === "confirmed" && (
+            {(booking.status === "confirmed" || booking.status === "assigned") && (
               <>
                 <button 
                   onClick={() => closeAndRun(onOnTheWay)}
@@ -153,7 +153,7 @@ export function BookingActions({
               </button>
             )}
 
-            {(booking.status === "confirmed" || booking.status === "on_the_way" || booking.status === "in_progress") && (
+            {(booking.status === "confirmed" || booking.status === "assigned" || booking.status === "on_the_way" || booking.status === "in_progress") && (
               <>
                 <div className="border-t border-slate-100 my-1" />
                 <button 
