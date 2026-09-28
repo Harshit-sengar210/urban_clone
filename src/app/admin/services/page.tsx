@@ -2,16 +2,31 @@
 
 import { useState } from "react";
 import { Plus, ChevronDown } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
 import { adminCatalogData } from "@/data/adminCatalogData";
 import { CatalogSummary } from "@/components/admin/services/CatalogSummary";
 import { AddServiceDrawer } from "@/components/admin/services/AddServiceDrawer";
+import { useEffect, useState } from "react";
+import { db } from "@/backend/firebase";
+import { collection, onSnapshot, addDoc } from "firebase/firestore";
 
 export default function AdminServicesPage() {
   const [activeTab, setActiveTab] = useState<"Categories" | "Services" | "Packages">("Categories");
   const [isMoreActionsOpen, setIsMoreActionsOpen] = useState(false);
   const [isAddServiceDrawerOpen, setIsAddServiceDrawerOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
+  
+  const [services, setServices] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+
+  useEffect(() => {
+    const unsubS = onSnapshot(collection(db, "services"), (snap) => {
+      setServices(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+    const unsubC = onSnapshot(collection(db, "categories"), (snap) => {
+      setCategories(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+    return () => { unsubS(); unsubC(); };
+  }, []);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -68,7 +83,17 @@ export default function AdminServicesPage() {
             </AnimatePresence>
           </div>
           <button 
-            onClick={() => showToast("Opening Add Category dialog...")}
+            onClick={async () => {
+              const name = window.prompt("Enter new category name:");
+              if (name) {
+                try {
+                  await addDoc(collection(db, "categories"), { name, createdAt: new Date().toISOString() });
+                  showToast("Category added successfully.");
+                } catch(e) {
+                  showToast("Failed to add category.");
+                }
+              }
+            }}
             className="flex justify-center items-center gap-2 px-4 h-10 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm font-bold hover:bg-slate-50 transition-colors shadow-sm"
           >
             <Plus className="w-4 h-4" />
@@ -84,7 +109,12 @@ export default function AdminServicesPage() {
         </div>
       </div>
 
-      <CatalogSummary summary={adminCatalogData.summary} />
+      <CatalogSummary summary={{
+        categories: categories.length,
+        services: services.length,
+        packages: services.reduce((acc, s) => acc + (s.packages?.length || s.variants?.length || 0), 0),
+        drafts: 0
+      }} />
 
       {/* Tabs */}
       <div className="flex border-b border-slate-200 mb-6 relative">
@@ -108,20 +138,60 @@ export default function AdminServicesPage() {
         ))}
       </div>
       
-      {/* Content Area placeholder for this partial step */}
-      <div className="bg-white rounded-2xl border border-slate-100 p-8 text-center shadow-sm">
-        <h3 className="text-lg font-bold text-[#0A192F]">{activeTab} Interface</h3>
-        <p className="text-slate-500 text-sm mt-2">
-          The {activeTab} management UI is currently being assembled.
-        </p>
+      {/* Content Area */}
+      <div className="bg-white rounded-2xl border border-slate-100 p-8 shadow-sm">
+        <h3 className="text-lg font-bold text-[#0A192F] mb-4">{activeTab}</h3>
+        
+        {activeTab === "Services" && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {services.map(s => (
+              <div key={s.id} className="p-4 border border-slate-200 rounded-xl">
+                <h4 className="font-bold text-slate-800">{s.name || s.title}</h4>
+                <p className="text-sm text-slate-500 mt-1">{s.description || "No description"}</p>
+                <div className="mt-3 flex gap-2">
+                  <span className="text-xs px-2 py-1 bg-slate-100 rounded-md font-medium text-slate-600">
+                    ₹{s.price || s.basePrice || s.variants?.[0]?.price || 0}
+                  </span>
+                  <span className="text-xs px-2 py-1 bg-slate-100 rounded-md font-medium text-slate-600">
+                    {s.category || s.categoryName || "General"}
+                  </span>
+                </div>
+              </div>
+            ))}
+            {services.length === 0 && <p className="text-slate-500 text-sm">No services found.</p>}
+          </div>
+        )}
+        
+        {activeTab === "Categories" && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {categories.map(c => (
+              <div key={c.id} className="p-4 border border-slate-200 rounded-xl font-bold text-slate-800">
+                {c.name || c.title}
+              </div>
+            ))}
+            {categories.length === 0 && <p className="text-slate-500 text-sm">No categories found.</p>}
+          </div>
+        )}
+
+        {activeTab === "Packages" && (
+          <p className="text-slate-500 text-sm text-center">Packages are managed inside individual services.</p>
+        )}
       </div>
 
       <AddServiceDrawer 
         isOpen={isAddServiceDrawerOpen} 
         onClose={() => setIsAddServiceDrawerOpen(false)} 
-        onSave={(data) => {
+        onSave={async (data) => {
           setIsAddServiceDrawerOpen(false);
-          showToast(`Service "${data.name}" added successfully.`);
+          try {
+            await addDoc(collection(db, "services"), {
+              ...data,
+              createdAt: new Date().toISOString()
+            });
+            showToast(`Service "${data.name}" added successfully.`);
+          } catch(e) {
+            showToast("Error saving service.");
+          }
         }}
       />
 
