@@ -184,6 +184,7 @@ export default function BookingDetailPage({ params }: { params: Promise<{ bookin
           vendorId: booking.vendorId,
           bookingId: booking.id,
           userId: user?.uid || "unknown",
+          customerId: user?.uid || "unknown",
           userName: user?.name || "Customer",
           rating: rating,
           comment: comment,
