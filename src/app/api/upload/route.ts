@@ -20,8 +20,15 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({ url: result.secure_url });
-  } catch (error) {
-    const errMessage = error instanceof Error ? error.message : String(error);
+  } catch (error: any) {
+    let errMessage = "Unknown error";
+    if (error instanceof Error) {
+      errMessage = error.message;
+    } else if (typeof error === "object" && error !== null) {
+      errMessage = error.message || JSON.stringify(error);
+    } else {
+      errMessage = String(error);
+    }
     console.error("Cloudinary upload error:", errMessage);
     return NextResponse.json({ error: "Upload failed: " + errMessage }, { status: 500 });
   }
