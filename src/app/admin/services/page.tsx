@@ -5,7 +5,7 @@ import { Plus, ChevronDown } from "lucide-react";
 import { adminCatalogData } from "@/data/adminCatalogData";
 import { CatalogSummary } from "@/components/admin/services/CatalogSummary";
 import { AddServiceDrawer } from "@/components/admin/services/AddServiceDrawer";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { db } from "@/backend/firebase";
 import { collection, onSnapshot, addDoc } from "firebase/firestore";
 
