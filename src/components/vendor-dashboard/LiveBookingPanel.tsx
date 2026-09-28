@@ -35,21 +35,36 @@ export function LiveBookingPanel({
       const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
       if (!AudioContextClass) return;
       const ctx = new AudioContextClass();
-      const osc = ctx.createOscillator();
-      const gainNode = ctx.createGain();
+      
+      // Attempt to resume if browser blocked autoplay
+      if (ctx.state === 'suspended') {
+        ctx.resume();
+      }
 
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(880, ctx.currentTime); // A5 note
-      osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.5);
+      const playNote = (freq: number, startTime: number) => {
+        const osc = ctx.createOscillator();
+        const gainNode = ctx.createGain();
 
-      gainNode.gain.setValueAtTime(0.5, ctx.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+        // Soft, bell-like sine wave
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(freq, startTime);
+        
+        // Attack and release envelope for a soft chime
+        gainNode.gain.setValueAtTime(0, startTime);
+        gainNode.gain.linearRampToValueAtTime(0.4, startTime + 0.05);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + 0.8);
 
-      osc.connect(gainNode);
-      gainNode.connect(ctx.destination);
+        osc.connect(gainNode);
+        gainNode.connect(ctx.destination);
 
-      osc.start();
-      osc.stop(ctx.currentTime + 0.5);
+        osc.start(startTime);
+        osc.stop(startTime + 1);
+      };
+
+      // Play a soft, pleasant double chime (C5 then E5)
+      playNote(523.25, ctx.currentTime);
+      playNote(659.25, ctx.currentTime + 0.15);
+      
     } catch (err) {
       console.error("Audio playback failed", err);
     }
