@@ -3,11 +3,12 @@
 import { useState } from "react";
 import { Plus, ChevronDown } from "lucide-react";
 import { adminCatalogData } from "@/data/adminCatalogData";
+import { ALL_SERVICES } from "@/data/services";
 import { CatalogSummary } from "@/components/admin/services/CatalogSummary";
 import { AddServiceDrawer } from "@/components/admin/services/AddServiceDrawer";
 import { useEffect } from "react";
 import { db } from "@/backend/firebase";
-import { collection, onSnapshot, addDoc } from "firebase/firestore";
+import { collection, onSnapshot, addDoc, setDoc, doc } from "firebase/firestore";
 
 export default function AdminServicesPage() {
   const [activeTab, setActiveTab] = useState<"Categories" | "Services" | "Packages">("Categories");
@@ -66,10 +67,25 @@ export default function AdminServicesPage() {
                     Export Catalog
                   </button>
                   <button 
-                    onClick={() => { setIsMoreActionsOpen(false); showToast("Opening import dialog..."); }}
+                    onClick={async () => { 
+                      setIsMoreActionsOpen(false); 
+                      showToast("Importing services...");
+                      try {
+                        for (const s of ALL_SERVICES) {
+                          await setDoc(doc(db, "services", s.id), {
+                            ...s,
+                            createdAt: new Date().toISOString()
+                          });
+                        }
+                        showToast("Import completed!");
+                      } catch (e) {
+                        showToast("Failed to import.");
+                        console.error(e);
+                      }
+                    }}
                     className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 font-medium"
                   >
-                    Import Services
+                    Import Dummy Services
                   </button>
                   <div className="border-t border-slate-100 my-1"></div>
                   <button 

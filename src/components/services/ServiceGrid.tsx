@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { ALL_SERVICES } from "@/data/services";
+import { useState, useMemo, useEffect } from "react";
 import { ServiceCard } from "@/components/shared/ServiceCard";
 import { ServiceFilters } from "@/components/services/ServiceFilters";
 import { EmptyServices } from "@/components/services/EmptyServices";
+import { SectionHeading } from "@/components/shared/SectionHeading";
+import { db } from "@/backend/firebase";
+import { collection, onSnapshot } from "firebase/firestore";
 import { SectionHeading } from "@/components/shared/SectionHeading";
 
 interface ServiceGridProps {
@@ -15,9 +17,17 @@ interface ServiceGridProps {
 export function ServiceGrid({ initialCategory = "all", hideHeading = false }: ServiceGridProps) {
   const [activeCategory, setActiveCategory] = useState(initialCategory);
   const [activeSort, setActiveSort] = useState("popular");
+  const [services, setServices] = useState<any[]>([]);
+
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, "services"), (snap) => {
+      setServices(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+    return () => unsub();
+  }, []);
 
   const filteredAndSortedServices = useMemo(() => {
-    let result = [...ALL_SERVICES];
+    let result = [...services];
 
     // Filter by category
     if (activeCategory !== "all") {
@@ -43,7 +53,7 @@ export function ServiceGrid({ initialCategory = "all", hideHeading = false }: Se
     }
 
     return result;
-  }, [activeCategory, activeSort]);
+  }, [activeCategory, activeSort, services]);
 
   return (
     <section className="py-12 md:py-20 bg-[var(--color-background)]">
