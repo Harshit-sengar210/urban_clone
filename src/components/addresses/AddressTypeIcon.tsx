@@ -16,7 +16,7 @@ interface AddressTypeIconProps {
 }
 
 export function AddressTypeIcon({ type, size = "md" }: AddressTypeIconProps) {
-  const cfg = CONFIG[type];
+  const cfg = CONFIG[type] || CONFIG.other;
   const sz = size === "sm" ? "w-8 h-8" : size === "lg" ? "w-12 h-12" : "w-10 h-10";
   const ico = size === "sm" ? 14 : size === "lg" ? 22 : 18;
   return (
@@ -27,5 +27,5 @@ export function AddressTypeIcon({ type, size = "md" }: AddressTypeIconProps) {
 }
 
 export function AddressTypeLabel({ type }: { type: AddressType }) {
-  return <span>{CONFIG[type].label}</span>;
+  return <span>{(CONFIG[type] || CONFIG.other).label}</span>;
 }

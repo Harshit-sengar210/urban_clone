@@ -20,9 +20,19 @@ const TYPE_ORDER = { home: 0, work: 1, other: 2 };
 function sortAddresses(list: Address[]): Address[] {
   return [...list].sort((a, b) => {
     if (a.isDefault !== b.isDefault) return a.isDefault ? -1 : 1;
-    const typeSort = TYPE_ORDER[a.type] - TYPE_ORDER[b.type];
+    
+    // Safely fallback to 'other' (2) if type is missing or invalid
+    const typeA = TYPE_ORDER[a.type as keyof typeof TYPE_ORDER] ?? 2;
+    const typeB = TYPE_ORDER[b.type as keyof typeof TYPE_ORDER] ?? 2;
+    
+    const typeSort = typeA - typeB;
     if (typeSort !== 0) return typeSort;
-    return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+    
+    // Fallback if createdAt is missing
+    const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    
+    return timeB - timeA; // Newest first
   });
 }
 
