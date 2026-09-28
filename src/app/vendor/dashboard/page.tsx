@@ -100,13 +100,78 @@ export default function VendorDashboard() {
 
       setData((prev: any) => ({
         ...prev,
-        liveBookingRequests: requests
+        liveBookingRequests: requests,
+        stats: {
+          ...prev.stats,
+          pendingBookings: requests.length
+        }
+      }));
+    });
+
+    const qVendorBookings = query(
+      collection(db, "bookings"),
+      where("vendorId", "==", user.uid)
+    );
+
+    const unsubVendorBookings = onSnapshot(qVendorBookings, (snap) => {
+      let upcoming: any[] = [];
+      let recent: any[] = [];
+      let totalEarnings = 0;
+      let totalBookings = snap.docs.length;
+
+      snap.docs.forEach(docSnap => {
+        const d = docSnap.data();
+        const dateVal = d.date?.toDate ? d.date.toDate() : d.date ? new Date(d.date) : new Date();
+        const dateStr = dateVal instanceof Date ? dateVal.toISOString() : dateVal;
+        
+        let loc = "Unknown Location";
+        if (typeof d.address === 'object' && d.address !== null) {
+          loc = d.address.fullAddress;
+        } else if (typeof d.address === 'string') {
+          loc = d.address;
+        }
+
+        const bData = {
+          id: docSnap.id,
+          customerName: d.userName || "Customer",
+          service: d.serviceName || d.service || "Service",
+          location: loc,
+          date: dateStr,
+          time: d.time || "Not set",
+          estimatedEarnings: d.amountCollected || d.variant?.price ? Math.floor(d.variant.price * 0.8) : (d.amount || d.price || 0),
+          status: d.status,
+          distance: "2.5 km away",
+          paymentMethod: d.paymentMethod
+        };
+
+        if (d.status === "assigned" || d.status === "confirmed" || d.status === "on_the_way" || d.status === "in_progress") {
+          upcoming.push(bData);
+        } else if (d.status === "completed") {
+          recent.push(bData);
+          totalEarnings += bData.estimatedEarnings;
+        }
+      });
+
+      // Sort
+      upcoming.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      recent.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+      setData((prev: any) => ({
+        ...prev,
+        upcomingBookings: upcoming.slice(0, 5),
+        recentBookings: recent.slice(0, 5),
+        stats: {
+          ...prev.stats,
+          totalBookings: totalBookings,
+          totalEarnings: totalEarnings
+        }
       }));
     });
 
     return () => {
       unsubVendor();
       unsubPending();
+      unsubVendorBookings();
     };
   }, [user?.uid]);
 
@@ -128,18 +193,7 @@ export default function VendorDashboard() {
       console.error("Failed to accept booking", e);
     }
 
-    // Local state updates will happen automatically via the snapshot listener for liveBookingRequests,
-    // but we can manually add it to upcoming if we had a listener for it.
-    // For now, we manually push to upcomingBookings.
-    setData((prev: any) => ({
-      ...prev,
-      upcomingBookings: [{ ...request, status: "confirmed" }, ...prev.upcomingBookings],
-      stats: {
-        ...prev.stats,
-        pendingBookings: Math.max(0, prev.stats.pendingBookings - 1),
-        totalBookings: prev.stats.totalBookings + 1
-      }
-    }));
+    // We rely on the snapshot listeners for updates.
   };
 
   const handleRejectBooking = async (id: string, reason: string) => {

@@ -54,6 +54,7 @@ export function RecentBookings({ bookings }: { bookings: BookingRequest[] }) {
               <th className="pb-4 font-bold">Customer</th>
               <th className="pb-4 font-bold">Date & Time</th>
               <th className="pb-4 font-bold">Status</th>
+              <th className="pb-4 font-bold">Payment</th>
               <th className="pb-4 font-bold text-right">Amount</th>
             </tr>
           </thead>
@@ -93,6 +94,17 @@ export function RecentBookings({ bookings }: { bookings: BookingRequest[] }) {
                 <td className="py-4">
                   <StatusBadge status={booking.status || "pending"} />
                 </td>
+                <td className="py-4">
+                  {booking.paymentMethod ? (
+                    <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-md ${
+                      booking.paymentMethod === 'cod' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'
+                    }`}>
+                      {booking.paymentMethod === 'cod' ? 'CASH' : 'ONLINE'}
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-medium text-slate-400 uppercase">Pending</span>
+                  )}
+                </td>
                 <td className="py-4 text-right font-bold text-slate-900">
                   {formatCurrency(booking.estimatedEarnings)}
                 </td>
@@ -119,7 +131,16 @@ export function RecentBookings({ bookings }: { bookings: BookingRequest[] }) {
               <StatusBadge status={booking.status || "pending"} />
             </div>
             <div className="flex justify-between items-center text-xs pt-3 border-t border-slate-100">
-              <span className="text-slate-500">{booking.date}, {booking.time.split('–')[0].trim()}</span>
+              <div className="flex flex-col gap-1">
+                <span className="text-slate-500">{booking.date}, {booking.time.split('–')[0].trim()}</span>
+                {booking.paymentMethod && (
+                  <span className={`text-[9px] font-bold uppercase tracking-widest w-max px-2 py-0.5 rounded-md ${
+                    booking.paymentMethod === 'cod' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'
+                  }`}>
+                    {booking.paymentMethod === 'cod' ? 'CASH' : 'ONLINE'}
+                  </span>
+                )}
+              </div>
               <span className="font-bold text-slate-900">{formatCurrency(booking.estimatedEarnings)}</span>
             </div>
           </div>

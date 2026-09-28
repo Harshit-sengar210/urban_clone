@@ -48,6 +48,7 @@ export function RecentEarnings({ earnings, onViewEarning }: RecentEarningsProps)
               <th className="px-6 md:px-8 py-4">Service & Customer</th>
               <th className="px-6 md:px-8 py-4">Date</th>
               <th className="px-6 md:px-8 py-4">Status</th>
+              <th className="px-6 md:px-8 py-4">Payment</th>
               <th className="px-6 md:px-8 py-4 text-right">Amount</th>
             </tr>
           </thead>
@@ -76,6 +77,17 @@ export function RecentEarnings({ earnings, onViewEarning }: RecentEarningsProps)
                       <div className={cn("w-1.5 h-1.5 rounded-full", config.dot)} />
                       <span className={cn("text-[10px] font-bold uppercase tracking-wider", config.color)}>{config.label}</span>
                     </div>
+                  </td>
+                  <td className="px-6 md:px-8 py-4 align-middle">
+                    {earning.paymentMethod ? (
+                      <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-md ${
+                        earning.paymentMethod === 'cod' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'
+                      }`}>
+                        {earning.paymentMethod === 'cod' ? 'CASH' : 'ONLINE'}
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-medium text-slate-400 uppercase">Paid</span>
+                    )}
                   </td>
                   <td className="px-6 md:px-8 py-4 align-middle text-right font-black text-slate-900">
                     {formatCurrency(earning.partnerEarnings)}

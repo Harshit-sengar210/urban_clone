@@ -187,6 +187,7 @@ export interface BookingRequest {
   estimatedEarnings: number;
   status?: BookingStatus;
   distance?: string;
+  paymentMethod?: string;
 }
 
 export interface VendorBooking {
@@ -205,6 +206,7 @@ export interface VendorBooking {
   estimatedEarnings?: number;
   description?: string;
   createdAt: string;
+  paymentMethod?: string;
 }
 
 export interface EarningsData {
@@ -228,6 +230,7 @@ export interface VendorEarning {
   grossAmount: number;
   partnerEarnings: number;
   status: EarningStatus;
+  paymentMethod?: string;
 }
 
 export type PayoutStatus = "pending" | "processing" | "paid" | "failed" | "cancelled";

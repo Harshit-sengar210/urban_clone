@@ -103,7 +103,8 @@ export default function VendorEarningsPage() {
             date: dateVal.toISOString().split('T')[0],
             grossAmount: gross,
             partnerEarnings: net,
-            status: "available"
+            status: "available",
+            paymentMethod: b.paymentMethod
           });
         } else if (["pending", "confirmed", "assigned", "on_the_way", "in_progress"].includes(b.status)) {
           pending += net;
