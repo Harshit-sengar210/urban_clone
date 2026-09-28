@@ -140,6 +140,15 @@ service cloud.firestore {
 
 
     // ─────────────────────────────────────────────
+    // /offers/{offerId}
+    // ─────────────────────────────────────────────
+    match /offers/{offerId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+
+    // ─────────────────────────────────────────────
     // /reviews/{reviewId}
     // ─────────────────────────────────────────────
     match /reviews/{reviewId} {
