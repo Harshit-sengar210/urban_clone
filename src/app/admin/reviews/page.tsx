@@ -5,15 +5,81 @@ import { Search, Filter, ArrowUpDown, Download, Star, MoreHorizontal, LayoutGrid
 import { motion } from "framer-motion";
 import { adminReviewsData, type AdminReview, type ReviewStatus } from "@/data/adminReviewsData";
 import { ReviewDetailsDrawer } from "@/components/admin/reviews/ReviewDetailsDrawer";
+import { useEffect } from "react";
+import { db } from "@/backend/firebase";
+import { collection, onSnapshot } from "firebase/firestore";
 
 export default function AdminReviewsPage() {
   const [activeTab, setActiveTab] = useState<ReviewStatus | "all">("all");
   const [viewMode, setViewMode] = useState<"table" | "grid">("table");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedReview, setSelectedReview] = useState<AdminReview | null>(null);
-  
+  const [reviews, setReviews] = useState<AdminReview[]>([]);
+  const [summary, setSummary] = useState(adminReviewsData.summary);
+
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, "reviews"), (snap) => {
+      let total = 0, sumRating = 0, flagged = 0, pending = 0, hidden = 0, thisMonth = 0;
+      const now = new Date();
+      
+      const loadedReviews = snap.docs.map(doc => {
+        const d = doc.data();
+        total++;
+        sumRating += (d.rating || 0);
+        
+        if (d.status === "flagged") flagged++;
+        if (d.status === "under_review") pending++;
+        if (d.status === "hidden") hidden++;
+        
+        const dateVal = d.createdAt?.toDate ? d.createdAt.toDate() : new Date(d.createdAt || Date.now());
+        if (dateVal.getMonth() === now.getMonth() && dateVal.getFullYear() === now.getFullYear()) {
+          thisMonth++;
+        }
+        
+        return {
+          id: doc.id,
+          bookingId: d.bookingId || "Unknown",
+          customer: {
+            id: d.customerId || "Unknown",
+            name: d.customerName || "Customer"
+          },
+          vendor: {
+            id: d.vendorId || "Unknown",
+            name: d.vendorName || d.professional || "Vendor",
+            rating: 0
+          },
+          service: {
+            categoryId: d.categoryId || "Unknown",
+            serviceId: d.serviceId || "Unknown",
+            packageId: d.packageId || "Unknown",
+            categoryName: d.categoryName || "Category",
+            serviceName: d.serviceName || "Service",
+            packageName: d.packageName || "Package"
+          },
+          rating: d.rating || 0,
+          title: d.title || "",
+          text: d.reviewText || d.comment || "",
+          status: d.status || "published",
+          verifiedBooking: d.verifiedBooking !== false,
+          helpfulCount: d.helpfulCount || 0,
+          reportCount: d.reportCount || 0,
+          moderationReason: d.moderationReason,
+          createdAt: dateVal.toISOString(),
+          updatedAt: dateVal.toISOString(),
+          activity: []
+        } as AdminReview;
+      });
+      
+      const averageRating = total > 0 ? Number((sumRating / total).toFixed(1)) : 0;
+      setSummary({ total, averageRating, reviewsThisMonth: thisMonth, pendingModeration: pending, flagged, hidden });
+      setReviews(loadedReviews);
+    });
+    
+    return () => unsub();
+  }, []);
+
   const filteredReviews = useMemo(() => {
-    let result = adminReviewsData.reviews;
+    let result = reviews;
     if (activeTab !== "all") {
       result = result.filter(r => r.status === activeTab);
     }
@@ -28,7 +94,7 @@ export default function AdminReviewsPage() {
       );
     }
     return result;
-  }, [activeTab, searchQuery]);
+  }, [activeTab, searchQuery, reviews]);
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in duration-500 pb-12">
@@ -53,15 +119,14 @@ export default function AdminReviewsPage() {
         </div>
       </div>
 
-      {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
         {[
-          { label: "Total Reviews", value: adminReviewsData.summary.total.toLocaleString() },
-          { label: "Average Rating", value: adminReviewsData.summary.averageRating, highlight: "text-emerald-600", isStar: true },
-          { label: "This Month", value: adminReviewsData.summary.reviewsThisMonth.toLocaleString() },
-          { label: "Pending Moderation", value: adminReviewsData.summary.pendingModeration, highlight: "text-amber-600" },
-          { label: "Flagged Reviews", value: adminReviewsData.summary.flagged, highlight: "text-rose-600" },
-          { label: "Hidden Reviews", value: adminReviewsData.summary.hidden },
+          { label: "Total Reviews", value: summary.total.toLocaleString() },
+          { label: "Average Rating", value: summary.averageRating, highlight: "text-emerald-600", isStar: true },
+          { label: "This Month", value: summary.reviewsThisMonth.toLocaleString() },
+          { label: "Pending Moderation", value: summary.pendingModeration, highlight: "text-amber-600" },
+          { label: "Flagged Reviews", value: summary.flagged, highlight: "text-rose-600" },
+          { label: "Hidden Reviews", value: summary.hidden },
         ].map((stat, i) => (
           <div key={i} className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
             <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">{stat.label}</p>
