@@ -40,20 +40,18 @@ export default function OffersPage() {
           id: doc.id,
           title: d.name || "Untitled Offer",
           shortDescription: d.description || "",
-          longDescription: d.description || "",
-          couponCode: d.code || "NOCODE",
-          discountType: d.discountType === "percentage" ? "percentage" : "flat",
+          type: d.discountType === "percentage" ? "percentage" : "flat",
           discountValue: d.discountValue || 0,
-          maxDiscount: d.maximumDiscount || undefined,
-          minOrderValue: d.eligibility?.minimumOrderValue || 0,
+          couponCode: d.code || "NOCODE",
+          category: (d.targeting?.categories?.[0] || "All") as OfferCategory,
+          minBookingAmount: d.eligibility?.minimumOrderValue || 0,
+          maxDiscount: d.maximumDiscount || 0,
           validFrom: d.validity?.startDate || new Date().toISOString(),
           validUntil: d.validity?.endDate || new Date().toISOString(),
-          category: (d.targeting?.categories?.[0] || "All") as OfferCategory,
           status: "active",
-          applicableServices: d.targeting?.services || [],
-          applicableCategories: d.targeting?.categories || [],
-          isFirstBooking: d.eligibility?.firstBookingOnly || false,
-          termsAndConditions: ["Offer is valid for a limited time.", "Cannot be clubbed with other offers."]
+          eligibleServices: d.targeting?.services || [],
+          terms: ["Offer is valid for a limited time.", "Cannot be clubbed with other offers."],
+          isFirstBooking: d.eligibility?.firstBookingOnly || false
         } as Offer;
       });
       

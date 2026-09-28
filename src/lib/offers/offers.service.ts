@@ -18,16 +18,12 @@ export const OffersService = {
         title: d.name || "Untitled Offer",
         description: d.description || "",
         code: d.code || "NOCODE",
-        discountType: d.discountType === "percentage" ? "percentage" : "flat",
-        discountValue: d.discountValue || 0,
-        maximumDiscount: d.maximumDiscount || undefined,
-        minimumOrderValue: d.eligibility?.minimumOrderValue || 0,
+        category: (d.targeting?.categories?.[0] || "all") as any,
+        minimumBookingAmount: d.eligibility?.minimumOrderValue || 0,
+        maximumDiscount: d.maximumDiscount || 0,
         validUntil: d.validity?.endDate || new Date().toISOString(),
-        category: (d.targeting?.categories?.[0] || "All") as any,
-        status: "active",
+        status: "available",
         saved: localSavedState[doc.id] || false,
-        isFirstBooking: d.eligibility?.firstBookingOnly || false,
-        termsAndConditions: ["Offer is valid for a limited time.", "Cannot be clubbed with other offers."]
       } as Offer;
     });
 

@@ -7,7 +7,6 @@ import { EmptyServices } from "@/components/services/EmptyServices";
 import { SectionHeading } from "@/components/shared/SectionHeading";
 import { db } from "@/backend/firebase";
 import { collection, onSnapshot } from "firebase/firestore";
-import { SectionHeading } from "@/components/shared/SectionHeading";
 
 interface ServiceGridProps {
   initialCategory?: string;
