@@ -77,7 +77,7 @@ export default function VendorEarningsPage() {
       snapshot.forEach((docSnap) => {
         const b = docSnap.data();
         const dateVal = b.date?.toDate ? b.date.toDate() : b.date ? new Date(b.date) : new Date();
-        const gross = b.amount || b.price || 0;
+        const gross = b.amountCollected || b.amount || b.price || 0;
         const net = b.estimatedEarnings || Math.floor(gross * 0.8);
         
         if (b.status === "completed") {

@@ -138,7 +138,7 @@ export default function VendorDashboard() {
           location: loc,
           date: dateStr,
           time: d.time || "Not set",
-          estimatedEarnings: d.amountCollected || d.variant?.price ? Math.floor(d.variant.price * 0.8) : (d.amount || d.price || 0),
+          estimatedEarnings: d.estimatedEarnings || Math.floor((d.amountCollected || d.variant?.price || d.amount || d.price || 0) * 0.8),
           status: d.status,
           distance: "2.5 km away",
           paymentMethod: d.paymentMethod

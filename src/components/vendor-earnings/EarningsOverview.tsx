@@ -20,6 +20,7 @@ export function EarningsOverview({ data }: EarningsOverviewProps) {
 
   // Find max for scaling the chart
   const maxAmount = Math.max(...data.map(d => d.amount), 1000); // 1000 min scale
+  const totalAmount = data.reduce((sum, d) => sum + d.amount, 0);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
@@ -41,7 +42,7 @@ export function EarningsOverview({ data }: EarningsOverviewProps) {
           <h2 className="text-xl font-bold text-slate-900 mb-1">Earnings Overview</h2>
           <div className="flex items-center gap-2 text-sm">
             <span className="font-medium text-slate-500">Total:</span>
-            <span className="font-black text-indigo-600">{formatCurrency(18750)}</span>
+            <span className="font-black text-indigo-600">{formatCurrency(totalAmount)}</span>
             <span className="text-emerald-600 font-bold flex items-center gap-1 text-xs bg-emerald-50 px-2 py-0.5 rounded-full">
               <TrendingUp className="w-3 h-3" /> 12.4%
             </span>
