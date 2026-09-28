@@ -3,7 +3,9 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, SlidersHorizontal } from "lucide-react";
-import { MOCK_OFFERS, MOCK_STATS, Offer, OfferCategory } from "@/data/offers";
+import { MOCK_STATS, Offer, OfferCategory } from "@/data/offers";
+import { db } from "@/backend/firebase";
+import { collection, onSnapshot } from "firebase/firestore";
 import { OffersPageHeader } from "@/components/offers/OffersPageHeader";
 import { OfferStats } from "@/components/offers/OfferStats";
 import { FeaturedOffer } from "@/components/offers/FeaturedOffer";
@@ -29,11 +31,37 @@ export default function OffersPage() {
   const { toasts, showToast, removeToast } = useToast();
 
   useEffect(() => {
-    const t = setTimeout(() => {
-      setOffers(MOCK_OFFERS);
+    const unsub = onSnapshot(collection(db, "offers"), (snap) => {
+      const loadedOffers = snap.docs.map(doc => {
+        const d = doc.data();
+        
+        // Convert AdminOffer shape to User Offer shape
+        return {
+          id: doc.id,
+          title: d.name || "Untitled Offer",
+          shortDescription: d.description || "",
+          longDescription: d.description || "",
+          couponCode: d.code || "NOCODE",
+          discountType: d.discountType === "percentage" ? "percentage" : "flat",
+          discountValue: d.discountValue || 0,
+          maxDiscount: d.maximumDiscount || undefined,
+          minOrderValue: d.eligibility?.minimumOrderValue || 0,
+          validFrom: d.validity?.startDate || new Date().toISOString(),
+          validUntil: d.validity?.endDate || new Date().toISOString(),
+          category: (d.targeting?.categories?.[0] || "All") as OfferCategory,
+          status: "active",
+          applicableServices: d.targeting?.services || [],
+          applicableCategories: d.targeting?.categories || [],
+          isFirstBooking: d.eligibility?.firstBookingOnly || false,
+          termsAndConditions: ["Offer is valid for a limited time.", "Cannot be clubbed with other offers."]
+        } as Offer;
+      });
+      
+      setOffers(loadedOffers);
       setLoading(false);
-    }, 600);
-    return () => clearTimeout(t);
+    });
+
+    return () => unsub();
   }, []);
 
   const handleToggleSave = (id: string) => {

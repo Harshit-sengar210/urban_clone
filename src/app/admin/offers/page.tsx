@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Plus, MoreHorizontal, Search, Filter, ArrowUpDown, Tag, LayoutGrid, List } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { adminOffersData, type AdminOffer } from "@/data/adminOffersData";
 import { CreateOfferDrawer } from "@/components/admin/offers/CreateOfferDrawer";
 import { OfferDetailsDrawer } from "@/components/admin/offers/OfferDetailsDrawer";
+import { db } from "@/backend/firebase";
+import { collection, onSnapshot, addDoc, updateDoc, doc } from "firebase/firestore";
 
 export default function AdminOffersPage() {
   const [activeTab, setActiveTab] = useState("all");
@@ -14,9 +16,55 @@ export default function AdminOffersPage() {
   const [isCreateDrawerOpen, setIsCreateDrawerOpen] = useState(false);
   const [selectedOffer, setSelectedOffer] = useState<AdminOffer | null>(null);
   const [offerToEdit, setOfferToEdit] = useState<AdminOffer | null>(null);
-  
+  const [offers, setOffers] = useState<AdminOffer[]>([]);
+  const [summary, setSummary] = useState(adminOffersData.summary);
+
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, "offers"), (snap) => {
+      let total = 0, active = 0, scheduled = 0, drafts = 0, redemptions = 0, discountGiven = 0;
+      
+      const loadedOffers = snap.docs.map(doc => {
+        const d = doc.data();
+        total++;
+        if (d.status === "active") active++;
+        else if (d.status === "scheduled") scheduled++;
+        else if (d.status === "draft") drafts++;
+
+        redemptions += (d.usageCount || 0);
+        discountGiven += (d.performance?.discountGiven || 0);
+
+        return {
+          id: doc.id,
+          name: d.name || "Untitled Offer",
+          code: d.code || "NOCODE",
+          description: d.description || "",
+          offerType: d.offerType || "flat_discount",
+          discountType: d.discountType || "flat",
+          discountValue: d.discountValue || 0,
+          maximumDiscount: d.maximumDiscount || 0,
+          audience: d.audience || "everyone",
+          targeting: d.targeting || { categories: [], services: [], packages: [], vendors: [], vendorTargeting: "none" },
+          eligibility: d.eligibility || { minimumOrderValue: 0, maximumUsesPerCustomer: 1, totalUsageLimit: 100, firstBookingOnly: false, verifiedCustomersOnly: false },
+          validity: d.validity || { startDate: "", startTime: "", endDate: "", endTime: "", timezone: "IST" },
+          status: d.status || "draft",
+          usageCount: d.usageCount || 0,
+          performance: d.performance || { redemptions: 0, revenueGenerated: 0, discountGiven: 0, averageOrderValue: 0, conversionRate: 0, uniqueCustomers: 0, repeatCustomers: 0 },
+          activity: d.activity || [],
+          createdAt: d.createdAt || new Date().toISOString(),
+          updatedAt: d.updatedAt || new Date().toISOString(),
+          createdBy: d.createdBy || "Admin"
+        } as AdminOffer;
+      });
+
+      setOffers(loadedOffers);
+      setSummary({ total, active, scheduled, drafts, redemptions, discountGiven });
+    });
+
+    return () => unsub();
+  }, []);
+
   const filteredOffers = useMemo(() => {
-    let result = adminOffersData.offers;
+    let result = offers;
     if (activeTab !== "all") {
       result = result.filter(o => o.status === activeTab);
     }
@@ -29,7 +77,7 @@ export default function AdminOffersPage() {
       );
     }
     return result;
-  }, [activeTab, searchQuery]);
+  }, [activeTab, searchQuery, offers]);
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in duration-500 pb-12">
@@ -57,15 +105,14 @@ export default function AdminOffersPage() {
         </div>
       </div>
 
-      {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
         {[
-          { label: "Total Offers", value: adminOffersData.summary.total.toLocaleString() },
-          { label: "Active Offers", value: adminOffersData.summary.active, highlight: "text-[var(--color-primary)]" },
-          { label: "Scheduled", value: adminOffersData.summary.scheduled },
-          { label: "Drafts", value: adminOffersData.summary.drafts },
-          { label: "Redemptions", value: adminOffersData.summary.redemptions.toLocaleString() },
-          { label: "Discount Given", value: `₹${(adminOffersData.summary.discountGiven/100000).toFixed(2)}L` },
+          { label: "Total Offers", value: summary.total.toLocaleString() },
+          { label: "Active Offers", value: summary.active, highlight: "text-[var(--color-primary)]" },
+          { label: "Scheduled", value: summary.scheduled },
+          { label: "Drafts", value: summary.drafts },
+          { label: "Redemptions", value: summary.redemptions.toLocaleString() },
+          { label: "Discount Given", value: `₹${(summary.discountGiven/100000).toFixed(2)}L` },
         ].map((stat, i) => (
           <div key={i} className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
             <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">{stat.label}</p>
@@ -278,11 +325,36 @@ export default function AdminOffersPage() {
           setIsCreateDrawerOpen(false);
           setOfferToEdit(null);
         }}
-        onSave={(data) => {
-          console.log("Saving offer:", data);
-          setIsCreateDrawerOpen(false);
-          setOfferToEdit(null);
-          // In a real app, this would dispatch an action or make an API call
+        onSave={async (data) => {
+          const offerPayload = {
+            ...data,
+            offerType: "flat_discount",
+            audience: "everyone",
+            targeting: { categories: [], services: [], packages: [], vendors: [], vendorTargeting: "none" },
+            eligibility: { minimumOrderValue: 0, maximumUsesPerCustomer: 1, totalUsageLimit: parseInt(data.totalUsageLimit) || 100, firstBookingOnly: false, verifiedCustomersOnly: false },
+            validity: { startDate: data.startDate, startTime: "00:00", endDate: data.endDate, endTime: "23:59", timezone: "IST" },
+            status: "active",
+            usageCount: 0,
+            performance: { redemptions: 0, revenueGenerated: 0, discountGiven: 0, averageOrderValue: 0, conversionRate: 0, uniqueCustomers: 0, repeatCustomers: 0 },
+            activity: [{ id: "act-1", action: offerToEdit ? "Offer Updated" : "Offer Created", timestamp: new Date().toISOString(), actor: "Admin" }],
+            updatedAt: new Date().toISOString(),
+          };
+
+          try {
+            if (offerToEdit) {
+              await updateDoc(doc(db, "offers", offerToEdit.id), offerPayload);
+            } else {
+              await addDoc(collection(db, "offers"), {
+                ...offerPayload,
+                createdAt: new Date().toISOString(),
+                createdBy: "Admin"
+              });
+            }
+            setIsCreateDrawerOpen(false);
+            setOfferToEdit(null);
+          } catch (e) {
+            console.error("Error saving offer: ", e);
+          }
         }}
       />
 
