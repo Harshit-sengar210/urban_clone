@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@google-cloud/firestore": "^9.2.0",
     "cloudinary": "^2.11.0",
     "clsx": "^2.1.1",
     "firebase": "^12.19.0",
@@ -29,5 +30,8 @@
     "eslint-config-next": "16.3.5",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "overrides": {
+    "jwks-rsa": "3.1.0"
   }
 }

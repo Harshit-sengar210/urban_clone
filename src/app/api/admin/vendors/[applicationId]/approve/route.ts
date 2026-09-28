@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { FieldValue, Transaction } from 'firebase-admin/firestore';
 import { adminDb, adminAuth } from "@/backend/firebase-admin";
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ applicationId: string }> } // wait, next.js 15+ needs await params? Since the prompt doesn't strictly say it's 15, I'll use standard approach but next.js 15 requires awaiting params

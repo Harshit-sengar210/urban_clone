@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, use, useEffect } from "react";
+import { useState, use, useEffect, Suspense } from "react";
 import { ALL_SERVICES } from "@/data/services";
 import { notFound, useSearchParams, useRouter } from "next/navigation";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
@@ -22,7 +22,7 @@ import { AnimatePresence } from "framer-motion";
 // Default empty until fetched
 const INITIAL_ADDRESSES: Address[] = [];
 
-export default function BookingPage({ params }: { params: Promise<{ serviceSlug: string }> }) {
+function BookingPageContent({ params }: { params: Promise<{ serviceSlug: string }> }) {
   const resolvedParams = use(params);
   const service = ALL_SERVICES.find((s) => s.slug === resolvedParams.serviceSlug);
   const searchParams = useSearchParams();
@@ -328,5 +328,13 @@ export default function BookingPage({ params }: { params: Promise<{ serviceSlug:
         </div>
       )}
     </div>
+  );
+}
+
+export default function BookingPage({ params }: { params: Promise<{ serviceSlug: string }> }) {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading booking details...</div>}>
+      <BookingPageContent params={params} />
+    </Suspense>
   );
 }

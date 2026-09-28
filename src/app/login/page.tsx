@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Mail, Loader2 } from "lucide-react";
@@ -13,7 +13,7 @@ import { auth } from "@/backend/firebase";
 import { Button } from "@/components/ui/button";
 import { getUserRole, getDashboardUrl } from "@/lib/auth/roleUtils";
 
-export default function LoginPage() {
+function LoginPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectUrl = searchParams.get('redirect');
@@ -173,5 +173,13 @@ export default function LoginPage() {
       </div>
 
     </AuthLayout>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-indigo-600" /></div>}>
+      <LoginPageContent />
+    </Suspense>
   );
 }
