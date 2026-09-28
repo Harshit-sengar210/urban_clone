@@ -11,6 +11,9 @@ import { AddressDrawer } from "@/components/addresses/AddressDrawer";
 import { DeleteAddressModal, DefaultAddressProtectModal } from "@/components/addresses/AddressModals";
 import { AddressSkeleton, AddressEmptyState } from "@/components/addresses/AddressEmptyState";
 import { ToastContainer, useToast } from "@/components/bookings/Toast";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { db } from "@/backend/firebase";
+import { collection, query, onSnapshot, doc, addDoc, updateDoc, deleteDoc, writeBatch } from "firebase/firestore";
 
 // Sort addresses: default first, then home→work→other, then createdAt
 const TYPE_ORDER = { home: 0, work: 1, other: 2 };
@@ -33,51 +36,82 @@ export default function MyAddressesPage() {
   const [saving, setSaving] = useState(false);
   const { toasts, showToast, removeToast } = useToast();
 
+  const { user } = useCurrentUser();
+
   useEffect(() => {
-    const t = setTimeout(() => { setAddresses(sortAddresses(DEMO_ADDRESSES)); setLoading(false); }, 600);
-    return () => clearTimeout(t);
-  }, []);
+    if (!user?.uid) return;
+
+    const q = query(collection(db, "users", user.uid, "addresses"));
+    const unsub = onSnapshot(q, (snap) => {
+      const fetched: Address[] = snap.docs.map(doc => ({
+        ...(doc.data() as Omit<Address, "id">),
+        id: doc.id
+      }));
+      setAddresses(sortAddresses(fetched));
+      setLoading(false);
+    });
+
+    return () => unsub();
+  }, [user?.uid]);
 
   // ── Drawer actions ──────────────────────────────────────────────────────
   const openAdd = () => { setEditTarget(null); setDrawerOpen(true); };
   const openEdit = (a: Address) => { setEditTarget(a); setDrawerOpen(true); };
   const closeDrawer = () => { setDrawerOpen(false); setEditTarget(null); };
 
-  const handleSave = (data: AddressFormData) => {
+  const handleSave = async (data: AddressFormData) => {
+    if (!user?.uid) return;
     setSaving(true);
-    setTimeout(() => {
-      setSaving(false);
-      setAddresses((prev) => {
-        let updated: Address[];
-        if (editTarget) {
-          updated = prev.map((a) => a.id === editTarget.id ? { ...a, ...data } : a);
-        } else {
-          const newAddr: Address = {
-            ...data,
-            id: `addr_${Date.now()}`,
-            createdAt: new Date().toISOString(),
-          };
-          updated = [...prev, newAddr];
-        }
-        // Enforce single default
-        if (data.isDefault) {
-          updated = updated.map((a) =>
-            a.id === (editTarget?.id ?? updated[updated.length - 1]?.id)
-              ? { ...a, isDefault: true }
-              : { ...a, isDefault: false }
-          );
-        }
-        return sortAddresses(updated);
-      });
+    
+    try {
+      if (editTarget) {
+        await updateDoc(doc(db, "users", user.uid, "addresses", editTarget.id), {
+          ...data
+        });
+      } else {
+        await addDoc(collection(db, "users", user.uid, "addresses"), {
+          ...data,
+          createdAt: new Date().toISOString()
+        });
+      }
+
+      // Handle Default Enforce logic
+      if (data.isDefault) {
+        // We need to set all other addresses to isDefault: false
+        const batch = writeBatch(db);
+        addresses.forEach(a => {
+          if (a.id !== editTarget?.id && a.isDefault) {
+            batch.update(doc(db, "users", user.uid, "addresses", a.id), { isDefault: false });
+          }
+        });
+        await batch.commit();
+      }
+
       closeDrawer();
       showToast(editTarget ? "Address updated successfully." : "Address added successfully.");
-    }, 800);
+    } catch (err) {
+      console.error(err);
+      showToast("Failed to save address.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   // ── Default ─────────────────────────────────────────────────────────────
-  const handleSetDefault = (a: Address) => {
-    setAddresses((prev) => sortAddresses(prev.map((x) => ({ ...x, isDefault: x.id === a.id }))));
-    showToast("Default address updated.");
+  const handleSetDefault = async (a: Address) => {
+    if (!user?.uid) return;
+    try {
+      const batch = writeBatch(db);
+      addresses.forEach(addr => {
+        batch.update(doc(db, "users", user.uid, "addresses", addr.id), {
+          isDefault: addr.id === a.id
+        });
+      });
+      await batch.commit();
+      showToast("Default address updated.");
+    } catch (err) {
+      showToast("Failed to set default.");
+    }
   };
 
   // ── Delete ──────────────────────────────────────────────────────────────
@@ -86,9 +120,14 @@ export default function MyAddressesPage() {
     setDeleteTarget(a);
   };
 
-  const confirmDelete = (id: string) => {
-    setAddresses((prev) => sortAddresses(prev.filter((a) => a.id !== id)));
-    showToast("Address deleted successfully.");
+  const confirmDelete = async (id: string) => {
+    if (!user?.uid) return;
+    try {
+      await deleteDoc(doc(db, "users", user.uid, "addresses", id));
+      showToast("Address deleted successfully.");
+    } catch (err) {
+      showToast("Failed to delete address.");
+    }
   };
 
   const sorted = sortAddresses(addresses);
