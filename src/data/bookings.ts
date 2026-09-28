@@ -31,6 +31,7 @@ export interface Booking {
   image: string;
   professional: string | null;
   professionalRating: number | null;
+  vendorId?: string;
   date: string; // ISO string
   time: string;
   status: BookingStatus;

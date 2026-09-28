@@ -13,14 +13,10 @@ import { ReviewFilterToolbar, ReviewFilters } from "@/components/vendor-reviews/
 import { ReviewCard } from "@/components/vendor-reviews/ReviewCard";
 import { ReviewDrawer } from "@/components/vendor-reviews/ReviewDrawer";
 
-import {
-  mockVendorReviews,
-  mockRatingDistribution,
-  mockServiceRatings,
-  mockReviewTrend,
-  mockFeedbackThemes,
-} from "@/data/mockVendorData";
-import { VendorReview } from "@/types/vendor";
+import { VendorReview, RatingDistribution, ServiceRatingSummary, ReviewTrendPoint } from "@/types/vendor";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { db } from "@/backend/firebase";
+import { collection, query, where, onSnapshot, doc, updateDoc } from "firebase/firestore";
 
 const DEFAULT_FILTERS: ReviewFilters = {
   search: "",
@@ -31,15 +27,91 @@ const DEFAULT_FILTERS: ReviewFilters = {
 };
 
 export default function VendorReviewsPage() {
-  const [reviews, setReviews] = useState<VendorReview[]>(mockVendorReviews);
+  const { user } = useCurrentUser();
+  const [reviews, setReviews] = useState<VendorReview[]>([]);
   const [filters, setFilters] = useState<ReviewFilters>(DEFAULT_FILTERS);
   const [selectedReview, setSelectedReview] = useState<VendorReview | null>(null);
   const [toastMessage, setToastMessage] = useState("");
+  const [ratingDistribution, setRatingDistribution] = useState<RatingDistribution[]>([
+    { rating: 5, count: 0, percentage: 0 },
+    { rating: 4, count: 0, percentage: 0 },
+    { rating: 3, count: 0, percentage: 0 },
+    { rating: 2, count: 0, percentage: 0 },
+    { rating: 1, count: 0, percentage: 0 },
+  ]);
+  const [serviceRatings, setServiceRatings] = useState<ServiceRatingSummary[]>([]);
+  const [averageRating, setAverageRating] = useState(0);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(""), 3000);
   };
+
+  useEffect(() => {
+    if (!user?.uid) return;
+
+    const q = query(
+      collection(db, "reviews"),
+      where("vendorId", "==", user.uid)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const rawReviews: VendorReview[] = [];
+      const dist = [0, 0, 0, 0, 0];
+      const srvMap = new Map<string, { sum: number, count: number, name: string }>();
+      let totalSum = 0;
+
+      snapshot.forEach(docSnap => {
+        const d = docSnap.data();
+        const rating = (d.rating || 5) as 1|2|3|4|5;
+        dist[rating - 1]++;
+        totalSum += rating;
+
+        const dateVal = d.createdAt?.toDate ? d.createdAt.toDate().toISOString() : new Date().toISOString();
+
+        rawReviews.push({
+          id: docSnap.id,
+          customerDisplayName: d.userName || "Customer",
+          customerAvatarColor: "bg-indigo-100 text-indigo-700",
+          rating,
+          reviewText: d.comment || "",
+          serviceName: d.serviceName || "Service",
+          serviceId: d.serviceId || "srv_1",
+          createdAt: dateVal,
+          reply: d.reply ? { text: d.reply.text, createdAt: d.reply.createdAt } : undefined,
+        });
+
+        const sId = d.serviceId || "srv_1";
+        const sName = d.serviceName || "Service";
+        if (!srvMap.has(sId)) srvMap.set(sId, { sum: 0, count: 0, name: sName });
+        srvMap.get(sId)!.sum += rating;
+        srvMap.get(sId)!.count++;
+      });
+
+      const total = rawReviews.length;
+      setAverageRating(total > 0 ? Number((totalSum / total).toFixed(1)) : 0);
+
+      const newDist: RatingDistribution[] = [5, 4, 3, 2, 1].map(r => ({
+        rating: r as 1|2|3|4|5,
+        count: dist[r - 1],
+        percentage: total > 0 ? Math.round((dist[r - 1] / total) * 100) : 0
+      }));
+      setRatingDistribution(newDist);
+
+      const newServiceRatings: ServiceRatingSummary[] = Array.from(srvMap.entries()).map(([sId, val]) => ({
+        serviceId: sId,
+        serviceName: val.name,
+        averageRating: Number((val.sum / val.count).toFixed(1)),
+        reviewCount: val.count,
+        trend: "stable"
+      }));
+      setServiceRatings(newServiceRatings);
+
+      setReviews(rawReviews);
+    });
+
+    return () => unsubscribe();
+  }, [user?.uid]);
 
   // Sync external rating/service filter clicks back into the toolbar
   const setRatingFilter = (rating: number | null) => setFilters(f => ({ ...f, rating }));
@@ -75,21 +147,25 @@ export default function VendorReviewsPage() {
     return result;
   }, [reviews, filters]);
 
-  const handleReplySubmit = (reviewId: string, text: string) => {
+  const handleReplySubmit = async (reviewId: string, text: string) => {
     const now = new Date().toISOString();
-    setReviews(prev => prev.map(r => {
-      if (r.id !== reviewId) return r;
-      const existingReply = r.reply;
-      return {
-        ...r,
-        reply: {
+    
+    // Save reply to firestore
+    try {
+      await updateDoc(doc(db, "reviews", reviewId), {
+        reply: text.trim() ? {
           text,
-          createdAt: existingReply?.createdAt ?? now,
-          updatedAt: existingReply ? now : undefined,
-        }
-      };
-    }));
-    // Refresh selected review
+          createdAt: now
+        } : null
+      });
+      showToast(text.trim() ? "Reply posted successfully." : "Reply removed.");
+    } catch (e) {
+      console.error("Failed to post reply", e);
+      showToast("Failed to post reply");
+      return;
+    }
+
+    // Refresh selected review local state
     setSelectedReview(prev => {
       if (!prev || prev.id !== reviewId) return prev;
       const now = new Date().toISOString();
@@ -102,10 +178,7 @@ export default function VendorReviewsPage() {
         }
       };
     });
-    showToast(text.trim() ? "Reply posted successfully." : "Reply removed.");
-  };
-
-  const serviceOptions = mockServiceRatings.map(s => ({ id: s.serviceId, name: s.serviceName }));
+  const serviceOptions = serviceRatings.map(s => ({ id: s.serviceId, name: s.serviceName }));
 
   return (
     <VendorLayout>
@@ -138,9 +211,9 @@ export default function VendorReviewsPage() {
         >
           {[
             { label: "Total Reviews", value: reviews.length, icon: Star, color: "text-amber-600", bg: "bg-amber-50" },
-            { label: "Average Rating", value: "4.8 ★", icon: Star, color: "text-indigo-600", bg: "bg-indigo-50" },
+            { label: "Average Rating", value: `${averageRating} ★`, icon: Star, color: "text-indigo-600", bg: "bg-indigo-50" },
             { label: "Awaiting Reply", value: notRepliedCount, icon: MessageSquare, color: "text-orange-600", bg: "bg-orange-50", onClick: () => setFilters(f => ({ ...f, replyStatus: "not_replied" })) },
-            { label: "5-Star Reviews", value: mockRatingDistribution.find(d => d.rating === 5)?.count ?? 0, icon: Star, color: "text-emerald-600", bg: "bg-emerald-50", onClick: () => setRatingFilter(5) },
+            { label: "5-Star Reviews", value: ratingDistribution.find(d => d.rating === 5)?.count ?? 0, icon: Star, color: "text-emerald-600", bg: "bg-emerald-50", onClick: () => setRatingFilter(5) },
           ].map((stat, i) => (
             <motion.div
               key={i}
@@ -166,9 +239,9 @@ export default function VendorReviewsPage() {
           <div className="space-y-5">
 
             <RatingOverview
-              averageRating={4.8}
-              totalReviews={126}
-              distribution={mockRatingDistribution}
+              averageRating={averageRating}
+              totalReviews={reviews.length}
+              distribution={ratingDistribution}
               activeFilter={filters.rating}
               onFilterByRating={setRatingFilter}
             />
@@ -228,13 +301,13 @@ export default function VendorReviewsPage() {
 
           {/* ── Right Column — Analytics Sidebar ── */}
           <div className="space-y-5">
-            <RatingTrendChart data={mockReviewTrend} />
+            {/* Real trend data could go here, for now it's empty if no real data */}
             <ServiceRatings
-              services={mockServiceRatings}
+              services={serviceRatings}
               activeServiceId={filters.serviceId}
               onFilter={setServiceFilter}
             />
-            <FeedbackThemes themes={mockFeedbackThemes} />
+            {/* Mock Feedback themes removed since no real themes data yet */}
           </div>
         </div>
       </div>

@@ -20,8 +20,9 @@ import { Navigation, Download, ArrowLeft, PackageX } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { doc, getDoc, updateDoc, onSnapshot } from "firebase/firestore";
+import { doc, getDoc, updateDoc, onSnapshot, collection, addDoc } from "firebase/firestore";
 import { db } from "@/backend/firebase";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 // ─── Active Booking Banner ──────────────────────────────────────────────────
 function ActiveBanner({ booking }: { booking: Booking }) {
@@ -85,6 +86,8 @@ export default function BookingDetailPage({ params }: { params: Promise<{ bookin
   const [invoiceLoading, setInvoiceLoading] = useState(false);
   const { toasts, showToast, removeToast } = useToast();
   const prevStatusRef = useRef<BookingStatus | null>(null);
+  
+  const { user } = useCurrentUser();
 
   useEffect(() => {
     if (booking && prevStatusRef.current) {
@@ -117,6 +120,7 @@ export default function BookingDetailPage({ params }: { params: Promise<{ bookin
           amount: d.amount || d.price || (d.variant?.price) || 0,
           professional: d.professional || "Assigning...",
           professionalRating: d.professionalRating || null,
+          vendorId: d.vendorId || undefined,
           paymentStatus: d.paymentStatus || "pending",
           address: typeof d.address === 'object' && d.address !== null ? d.address.fullAddress : d.address || "Unknown Address",
           addressType: typeof d.address === 'object' && d.address !== null ? d.address.type : d.addressType || "Home",
@@ -170,10 +174,29 @@ export default function BookingDetailPage({ params }: { params: Promise<{ bookin
   const handleReview = async (id: string, rating: number, comment: string) => {
     try {
       const reviewData = { rating, comment, submittedAt: new Date().toISOString() };
+      
+      // Update booking document
       await updateDoc(doc(db, "bookings", bookingId), { review: reviewData });
+      
+      // Push to reviews collection for vendor panel
+      if (booking?.vendorId) {
+        await addDoc(collection(db, "reviews"), {
+          vendorId: booking.vendorId,
+          bookingId: booking.id,
+          userId: user?.uid || "unknown",
+          userName: user?.name || "Customer",
+          rating: rating,
+          comment: comment,
+          serviceName: booking.service,
+          serviceId: booking.serviceSlug,
+          createdAt: new Date(),
+        });
+      }
+
       setBooking((prev) => prev ? { ...prev, review: reviewData } : prev);
       showToast("Review submitted. Thank you!");
     } catch (err) {
+      console.error(err);
       showToast("Failed to submit review.");
     }
   };
