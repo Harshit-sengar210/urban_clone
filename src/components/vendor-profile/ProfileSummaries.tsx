@@ -10,6 +10,15 @@ import { db } from "@/backend/firebase";
 export function ProfileSummaries({ profile }: { profile: VendorProfile }) {
   const [isPayoutModalOpen, setIsPayoutModalOpen] = useState(false);
   
+  // Service Area State
+  const [isServiceAreaModalOpen, setIsServiceAreaModalOpen] = useState(false);
+  const [isSavingServiceArea, setIsSavingServiceArea] = useState(false);
+  const [serviceAreaForm, setServiceAreaForm] = useState({
+    city: profile.serviceArea.primaryCity || "",
+    radiusKm: profile.serviceArea.radiusKm || 5,
+    additionalAreas: profile.serviceArea.additionalAreas?.join(", ") || ""
+  });
+  
   // Adding New Bank Account State
   const [isAddingBank, setIsAddingBank] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -146,7 +155,12 @@ export function ProfileSummaries({ profile }: { profile: VendorProfile }) {
         </CardWrapper>
 
         {/* Service Area Summary */}
-        <CardWrapper title="Service Area" icon={<MapPin className="w-5 h-5" />} actionText="Edit Service Area">
+        <CardWrapper 
+          title="Service Area" 
+          icon={<MapPin className="w-5 h-5" />} 
+          actionText="Edit Service Area"
+          onAction={() => setIsServiceAreaModalOpen(true)}
+        >
           <div className="space-y-4 relative">
             <div className="absolute inset-0 bg-slate-50 rounded-xl overflow-hidden -z-10 opacity-50 flex items-center justify-center">
               <div className="w-full h-full border border-indigo-100 rounded-full scale-150 relative">
@@ -222,6 +236,105 @@ export function ProfileSummaries({ profile }: { profile: VendorProfile }) {
         </CardWrapper>
 
       </div>
+
+      {/* Service Area Details Modal */}
+      <AnimatePresence>
+        {isServiceAreaModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }} 
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+              onClick={() => setIsServiceAreaModalOpen(false)}
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col"
+            >
+              <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between shrink-0">
+                <h3 className="text-lg font-extrabold text-slate-900">Edit Service Area</h3>
+                <button 
+                  onClick={() => setIsServiceAreaModalOpen(false)}
+                  className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-5 overflow-y-auto max-h-[60vh]">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Primary City</label>
+                  <input 
+                    type="text" 
+                    value={serviceAreaForm.city}
+                    onChange={(e) => setServiceAreaForm(prev => ({ ...prev, city: e.target.value }))}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Service Radius (km)</label>
+                  <input 
+                    type="number" 
+                    value={serviceAreaForm.radiusKm}
+                    onChange={(e) => setServiceAreaForm(prev => ({ ...prev, radiusKm: parseInt(e.target.value) || 0 }))}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Additional Areas (comma separated)</label>
+                  <input 
+                    type="text" 
+                    value={serviceAreaForm.additionalAreas}
+                    onChange={(e) => setServiceAreaForm(prev => ({ ...prev, additionalAreas: e.target.value }))}
+                    placeholder="e.g. Vaishali, Indirapuram"
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
+                  />
+                </div>
+              </div>
+
+              <div className="p-4 bg-slate-50 border-t border-slate-100 flex gap-3">
+                <button 
+                  onClick={() => setIsServiceAreaModalOpen(false)}
+                  className="flex-1 py-3 px-4 rounded-xl text-sm font-bold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={async () => {
+                    if (!serviceAreaForm.city) return alert("City is required");
+                    setIsSavingServiceArea(true);
+                    try {
+                      const docRef = doc(db, "vendorApplications", profile.id);
+                      const areasArray = serviceAreaForm.additionalAreas.split(",").map(s => s.trim()).filter(Boolean);
+                      
+                      await updateDoc(docRef, {
+                        "serviceArea.city": serviceAreaForm.city,
+                        "serviceArea.radiusKm": serviceAreaForm.radiusKm,
+                        "serviceArea.additionalAreas": areasArray
+                      });
+                      
+                      setIsServiceAreaModalOpen(false);
+                      window.dispatchEvent(new CustomEvent('show-toast', { detail: "Service Area updated successfully!" }));
+                    } catch (e) {
+                      console.error(e);
+                      alert("Failed to save service area.");
+                    } finally {
+                      setIsSavingServiceArea(false);
+                    }
+                  }}
+                  disabled={isSavingServiceArea}
+                  className="flex-[2] py-3 px-4 rounded-xl text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2"
+                >
+                  {isSavingServiceArea ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Changes"}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Payout Details Modal */}
       <AnimatePresence>
