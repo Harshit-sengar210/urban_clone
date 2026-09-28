@@ -43,8 +43,8 @@ export default function VendorProfilePage() {
           personal: {
             fullName: d.personal?.fullName || d.personal?.legalName || d.email || "No Name Provided",
             avatar: d.personal?.profilePhoto || "https://images.unsplash.com/photo-1540569014015-19a7be504e3a?q=80&w=256&auto=format&fit=crop", // generic placeholder if empty
-            dateOfBirth: d.personal?.dob || "Not Provided",
-            gender: "Not Provided",
+            dateOfBirth: d.personal?.dateOfBirth || d.personal?.dob || "Not Provided",
+            gender: d.personal?.gender || "Not Provided",
             mobile: d.personal?.phone || "Not Provided",
             email: d.email || user.email || "Not Provided",
             alternatePhone: "Not Provided"
