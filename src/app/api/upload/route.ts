@@ -3,6 +3,9 @@ import cloudinary from "@/backend/cloudinary";
 
 export const dynamic = 'force-dynamic';
 
+export const maxDuration = 60; // 60 seconds
+
+
 export async function POST(request: Request) {
   try {
     const { image } = await request.json();

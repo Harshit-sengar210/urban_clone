@@ -130,6 +130,8 @@ export default function PersonalInfoPage() {
           const result = await res.json();
           photoUrl = result.url;
           setData(prev => ({ ...prev, profilePhoto: photoUrl }));
+        } else {
+          throw new Error("Failed to upload image to server.");
         }
       }
 
@@ -140,10 +142,10 @@ export default function PersonalInfoPage() {
       setTimeout(() => {
         router.push("/vendor/onboarding/business");
       }, 1000);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving profile:", error);
-      setToastMessage("Failed to save profile. Please try again.");
-      setTimeout(() => setToastMessage(""), 3000);
+      setToastMessage(`Failed to save profile: ${error.message || 'Please try again.'}`);
+      setTimeout(() => setToastMessage(""), 5000);
     }
   };
 
