@@ -131,7 +131,11 @@ export default function PersonalInfoPage() {
           photoUrl = result.url;
           setData(prev => ({ ...prev, profilePhoto: photoUrl }));
         } else {
-          throw new Error("Failed to upload image to server.");
+          let errData;
+          try {
+            errData = await res.json();
+          } catch (e) {}
+          throw new Error(errData?.error || "Failed to upload image to server.");
         }
       }
 
