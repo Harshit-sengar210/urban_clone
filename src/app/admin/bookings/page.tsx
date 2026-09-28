@@ -5,6 +5,9 @@ import { Plus, Download, MoreHorizontal, Calendar, Search, Filter, ArrowUpDown }
 import { motion } from "framer-motion";
 import { adminBookingsData, type AdminBooking, type BookingStatus } from "@/data/adminBookingsData";
 import { BookingDetailsDrawer } from "@/components/admin/bookings/BookingDetailsDrawer";
+import { useEffect } from "react";
+import { db } from "@/backend/firebase";
+import { collection, onSnapshot } from "firebase/firestore";
 
 const STATUS_COLORS: Record<string, string> = {
   pending: "bg-amber-50 text-amber-700 border-amber-200",
@@ -22,8 +25,93 @@ export default function AdminBookingsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedBooking, setSelectedBooking] = useState<AdminBooking | null>(null);
   
+  const [bookings, setBookings] = useState<AdminBooking[]>([]);
+  const [summary, setSummary] = useState(adminBookingsData.summary);
+
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, "bookings"), (snap) => {
+      let total = 0, today = 0, active = 0, completed = 0, cancelled = 0;
+      let value = 0;
+
+      const now = new Date();
+      const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+
+      const loadedBookings = snap.docs.map(doc => {
+        const d = doc.data();
+        total++;
+        
+        const dateVal = d.createdAt?.toDate ? d.createdAt.toDate() : new Date();
+        const bDate = new Date(dateVal.getFullYear(), dateVal.getMonth(), dateVal.getDate());
+        if (bDate.getTime() === startOfToday) today++;
+
+        if (d.status === "completed") completed++;
+        else if (d.status === "cancelled" || d.status === "rejected") cancelled++;
+        else active++;
+
+        const amt = d.amountCollected || d.variant?.price || d.amount || d.price || 0;
+        if (d.status === "completed") value += amt;
+
+        return {
+          id: doc.id.substring(0, 10).toUpperCase(),
+          customer: {
+            id: d.userId || d.customerId || "Unknown",
+            name: d.userName || "Customer",
+            email: "N/A",
+            phone: d.address?.phone || d.phone || "N/A"
+          },
+          vendor: {
+            id: d.vendorId || "Unknown",
+            name: d.professional || "Unassigned",
+            rating: 5,
+            verificationStatus: "verified" as const
+          },
+          service: {
+            categoryId: "N/A",
+            serviceId: d.serviceSlug || "N/A",
+            packageId: "N/A",
+            categoryName: d.category || "General",
+            serviceName: d.serviceName || d.service || "Service",
+            packageName: d.variant?.name || "Standard",
+            description: "",
+            duration: 60,
+            includedItems: []
+          },
+          bookingDate: dateVal.toLocaleDateString(),
+          bookingTime: d.time || "Not set",
+          duration: 60,
+          address: typeof d.address === "object" ? d.address.fullAddress : d.address || "Unknown",
+          status: (d.status || "pending") as BookingStatus,
+          paymentStatus: d.paymentStatus || "pending",
+          paymentMethod: d.paymentMethod || "Online",
+          pricing: {
+            basePrice: amt,
+            addOns: 0,
+            discount: 0,
+            tax: 0,
+            platformFee: 0,
+            total: amt,
+            vendorEarning: Math.floor(amt * 0.8)
+          },
+          timeline: [],
+          createdAt: dateVal.toISOString(),
+          updatedAt: new Date().toISOString(),
+          _time: dateVal.getTime()
+        } as AdminBooking & { _time: number };
+      });
+
+      loadedBookings.sort((a, b) => b._time - a._time);
+
+      setBookings(loadedBookings);
+      setSummary({
+        total, today, active, completed, cancelled, value
+      });
+    });
+
+    return () => unsub();
+  }, []);
+  
   const filteredBookings = useMemo(() => {
-    let result = adminBookingsData.bookings;
+    let result = bookings;
     if (activeTab !== "all") {
       result = result.filter(b => b.status === activeTab);
     }
@@ -65,12 +153,12 @@ export default function AdminBookingsPage() {
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
         {[
-          { label: "Total Bookings", value: adminBookingsData.summary.total.toLocaleString() },
-          { label: "Today's Bookings", value: adminBookingsData.summary.today, highlight: "text-[var(--color-primary)]" },
-          { label: "Active", value: adminBookingsData.summary.active },
-          { label: "Completed", value: adminBookingsData.summary.completed.toLocaleString() },
-          { label: "Cancelled", value: adminBookingsData.summary.cancelled },
-          { label: "Booking Value", value: "₹18.42L" },
+          { label: "Total Bookings", value: summary.total.toLocaleString() },
+          { label: "Today's Bookings", value: summary.today, highlight: "text-[var(--color-primary)]" },
+          { label: "Active", value: summary.active },
+          { label: "Completed", value: summary.completed.toLocaleString() },
+          { label: "Cancelled", value: summary.cancelled },
+          { label: "Booking Value", value: "₹" + (summary.value > 100000 ? (summary.value / 100000).toFixed(2) + "L" : summary.value.toLocaleString()) },
         ].map((stat, i) => (
           <div key={i} className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
             <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">{stat.label}</p>
