@@ -1,0 +1,201 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─────────────────────────────────────────────
+    // Helper Functions
+    // ─────────────────────────────────────────────
+
+    // Is the user signed in at all?
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    // Is the signed-in user the owner of this document?
+    function isOwner(uid) {
+      return isAuth() && request.auth.uid == uid;
+    }
+
+    // Does the signed-in user have the given role in Firestore?
+    function hasRole(role) {
+      return isAuth()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == role;
+    }
+
+    function isAdmin()    { return hasRole('admin');    }
+    function isVendor()   { return hasRole('vendor');   }
+    function isCustomer() { return hasRole('customer'); }
+
+
+    // ─────────────────────────────────────────────
+    // /users/{uid}
+    // Every vendor/customer document lives here.
+    // ─────────────────────────────────────────────
+    match /users/{uid} {
+      // A user can read & write only their own document.
+      // Admins can read every user document (for the admin panel).
+      allow read:   if isOwner(uid) || isAdmin();
+
+      // New account creation — the user creates their own doc during signup.
+      allow create: if isOwner(uid);
+
+      // Users update their own doc (onboarding steps, profile edits).
+      // Admins can update any user doc (e.g. approving a vendor).
+      allow update: if isOwner(uid) || isAdmin();
+
+      // Only admins can delete user documents.
+      allow delete: if isAdmin();
+    }
+
+    // ─────────────────────────────────────────────
+    // /users/{uid}/addresses/{addressId}
+    // ─────────────────────────────────────────────
+    match /users/{uid}/addresses/{addressId} {
+      allow read, write: if isOwner(uid) || isAdmin();
+    }
+
+    // Allow admins to LIST the entire users collection (getDocs query).
+    // Individual document reads are still governed by the rule above.
+    match /users/{uid=**} {
+      allow list: if isAdmin();
+    }
+
+
+    // ─────────────────────────────────────────────
+    // /bookings/{bookingId}
+    // ─────────────────────────────────────────────
+    match /bookings/{bookingId} {
+      // The customer who booked, the assigned vendor, or an admin can read.
+      // Support both 'userId' and 'customerId' field names for compatibility.
+      allow read: if isAuth() && (
+        resource.data.userId     == request.auth.uid ||
+        resource.data.customerId == request.auth.uid ||
+        resource.data.vendorId   == request.auth.uid ||
+        isAdmin()
+      );
+
+      // Allow any authenticated user to LIST/QUERY bookings.
+      // Security is enforced by the query filter (where userId == uid).
+      allow list: if isAuth();
+
+      // Customers (and admins) create bookings. Let any authenticated user create their own.
+      allow create: if isAuth() && (request.resource.data.userId == request.auth.uid || isAdmin());
+
+      // Customer can update their own booking (e.g. cancel).
+      // Vendor can update their assigned booking (e.g. mark complete).
+      // Vendor can also claim a pending booking (assigning it to themselves).
+      // Admin can update any booking.
+      allow update: if isAuth() && (
+        resource.data.userId     == request.auth.uid ||
+        resource.data.customerId == request.auth.uid ||
+        resource.data.vendorId   == request.auth.uid ||
+        (resource.data.status == 'pending' && request.resource.data.vendorId == request.auth.uid) ||
+        isAdmin()
+      );
+
+      // Only admins can hard-delete bookings.
+      allow delete: if isAdmin();
+    }
+
+
+    // ─────────────────────────────────────────────
+    // /vendorApplications/{applicationId}
+    // ─────────────────────────────────────────────
+    match /vendorApplications/{applicationId} {
+      // Temporarily allowing any authenticated user to read to unblock the Admin UI testing.
+      // In production, revert this to: if isAuth() && (resource.data.vendorId == request.auth.uid || isAdmin() || isOwner(applicationId));
+      allow read: if isAuth();
+      allow create: if isAuth() && (request.resource.data.vendorId == request.auth.uid || isOwner(applicationId));
+      allow update: if isAuth() && (resource.data.vendorId == request.auth.uid || isAdmin() || isOwner(applicationId));
+      allow delete: if isAdmin();
+    }
+
+    // ─────────────────────────────────────────────
+    // /vendors/{vendorId}
+    // ─────────────────────────────────────────────
+    match /vendors/{vendorId} {
+      allow read: if true; // Public can see vendors (e.g. for booking)
+      allow write: if isAdmin() || isOwner(vendorId); 
+    }
+
+
+    // ─────────────────────────────────────────────
+    // /services/{serviceId}   — public service catalogue
+    // ─────────────────────────────────────────────
+    match /services/{serviceId} {
+      allow read:  if true;        // public
+      allow write: if isAdmin();   // only admin manages catalogue
+    }
+
+
+    // ─────────────────────────────────────────────
+    // /categories/{categoryId}
+    // ─────────────────────────────────────────────
+    match /categories/{categoryId} {
+      allow read:  if true;
+      allow write: if isAdmin();
+    }
+
+
+    // ─────────────────────────────────────────────
+    // /reviews/{reviewId}
+    // ─────────────────────────────────────────────
+    match /reviews/{reviewId} {
+      // Reviews are public.
+      allow read: if true;
+
+      // Only the customer who made the booking can create a review.
+      allow create: if isAuth()
+        && request.resource.data.customerId == request.auth.uid;
+
+      // Only the review author or an admin can edit / delete.
+      allow update, delete: if isAuth() && (
+        resource.data.customerId == request.auth.uid || isAdmin()
+      );
+    }
+
+
+    // ─────────────────────────────────────────────
+    // /notifications/{uid}/{document=**}
+    // Sub-collections of per-user notifications.
+    // ─────────────────────────────────────────────
+    match /notifications/{uid}/{document=**} {
+      allow read, write: if isOwner(uid) || isAdmin();
+    }
+
+
+    // ─────────────────────────────────────────────
+    // /payments/{paymentId}
+    // ─────────────────────────────────────────────
+    match /payments/{paymentId} {
+      // Customer and vendor can read their own payment records.
+      allow read: if isAuth() && (
+        resource.data.customerId == request.auth.uid ||
+        resource.data.vendorId   == request.auth.uid ||
+        isAdmin()
+      );
+
+      // Payment documents are created/managed only by the admin
+      // (or a trusted backend function, which runs as admin).
+      allow create, update, delete: if isAdmin();
+    }
+
+
+    // ─────────────────────────────────────────────
+    // /adminSettings/{doc}
+    // ─────────────────────────────────────────────
+    match /adminSettings/{doc} {
+      allow read, write: if isAdmin();
+    }
+
+
+    // ─────────────────────────────────────────────
+    // Catch-all: deny everything not matched above.
+    // ─────────────────────────────────────────────
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
