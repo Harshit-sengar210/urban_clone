@@ -233,25 +233,34 @@ export function VendorApplicationDrawer({
                   <h4 className="text-sm font-bold text-[#0A192F]">Payout Information</h4>
                   <div className="bg-slate-50 border border-slate-100 rounded-xl p-5 space-y-4">
                     <div className="flex justify-between items-center border-b border-slate-200 pb-3">
-                      <span className="text-sm font-medium text-slate-500">Account Holder</span>
-                      <span className="text-sm font-bold text-[#0A192F]">{vendor.name}</span>
+                      <span className="text-sm font-medium text-slate-500">Payout Method</span>
+                      <span className="text-sm font-bold text-[#0A192F] capitalize">{vendor.rawData?.payouts?.method?.replace('_', ' ') || "Bank Account"}</span>
                     </div>
-                    <div className="flex justify-between items-center border-b border-slate-200 pb-3">
-                      <span className="text-sm font-medium text-slate-500">Bank Name</span>
-                      <span className="text-sm font-bold text-[#0A192F]">{vendor.rawData?.payouts?.bank?.bankName || "Not provided"}</span>
-                    </div>
-                    <div className="flex justify-between items-center border-b border-slate-200 pb-3">
-                      <span className="text-sm font-medium text-slate-500">Account Number</span>
-                      <span className="text-sm font-bold text-[#0A192F]">{vendor.rawData?.payouts?.bank?.accountNumber ? vendor.rawData.payouts.bank.accountNumber.replace(/.(?=.{4})/g, '•') : "Not provided"}</span>
-                    </div>
-                    <div className="flex justify-between items-center border-b border-slate-200 pb-3">
-                      <span className="text-sm font-medium text-slate-500">IFSC Code</span>
-                      <span className="text-sm font-bold text-[#0A192F]">{vendor.rawData?.payouts?.bank?.ifscCode ? `••••${vendor.rawData.payouts.bank.ifscCode.slice(-4)}` : "Not provided"}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium text-slate-500">UPI ID</span>
-                      <span className="text-sm font-bold text-[#0A192F]">{vendor.rawData?.payouts?.upi?.upiId || "Not provided"}</span>
-                    </div>
+                    {vendor.rawData?.payouts?.method === 'upi' ? (
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium text-slate-500">UPI ID</span>
+                        <span className="text-sm font-bold text-[#0A192F]">{vendor.rawData?.payouts?.upi?.upiId || "Not provided"}</span>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex justify-between items-center border-b border-slate-200 pb-3">
+                          <span className="text-sm font-medium text-slate-500">Account Holder</span>
+                          <span className="text-sm font-bold text-[#0A192F]">{vendor.name}</span>
+                        </div>
+                        <div className="flex justify-between items-center border-b border-slate-200 pb-3">
+                          <span className="text-sm font-medium text-slate-500">Bank Name</span>
+                          <span className="text-sm font-bold text-[#0A192F]">{vendor.rawData?.payouts?.bank?.bankName || "Not provided"}</span>
+                        </div>
+                        <div className="flex justify-between items-center border-b border-slate-200 pb-3">
+                          <span className="text-sm font-medium text-slate-500">Account Number</span>
+                          <span className="text-sm font-bold text-[#0A192F]">{vendor.rawData?.payouts?.bank?.accountNumber ? vendor.rawData.payouts.bank.accountNumber.replace(/.(?=.{4})/g, '•') : "Not provided"}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-medium text-slate-500">IFSC Code</span>
+                          <span className="text-sm font-bold text-[#0A192F]">{vendor.rawData?.payouts?.bank?.ifscCode ? `••••${vendor.rawData.payouts.bank.ifscCode.slice(-4)}` : "Not provided"}</span>
+                        </div>
+                      </>
+                    )}
                   </div>
                   <p className="text-xs text-slate-400 text-center">Sensitive information is masked for security.</p>
                 </div>
@@ -370,7 +379,7 @@ export function VendorApplicationDrawer({
                     </div>
                     <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl">
                       <p className="text-xs font-bold text-slate-400 uppercase">Years of Experience</p>
-                      <p className="text-sm font-bold text-[#0A192F] mt-1">{vendor.rawData?.experience?.years || "Not provided"}</p>
+                      <p className="text-sm font-bold text-[#0A192F] mt-1">{vendor.rawData?.experience?.yearsOfExperience || vendor.rawData?.experience?.years || "Not provided"}</p>
                     </div>
                   </div>
                 </div>
