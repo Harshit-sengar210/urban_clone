@@ -30,11 +30,14 @@ export default function VendorLoginPage() {
       
       // Check vendor profile
       const vendorDoc = await getDoc(doc(db, "vendors", userCredential.user.uid));
-      if (vendorDoc.exists() && vendorDoc.data()?.status === "active") {
-        const keysToClear = Object.keys(localStorage).filter(k => k.startsWith("vendor_onboarding"));
-        keysToClear.forEach(k => localStorage.removeItem(k));
-        router.push("/vendor/dashboard");
-        return;
+      if (vendorDoc.exists()) {
+        const status = vendorDoc.data()?.status;
+        if (status === "active" || status === "suspended") {
+          const keysToClear = Object.keys(localStorage).filter(k => k.startsWith("vendor_onboarding"));
+          keysToClear.forEach(k => localStorage.removeItem(k));
+          router.push("/vendor/dashboard");
+          return;
+        }
       }
 
       // Check application status
@@ -88,11 +91,14 @@ export default function VendorLoginPage() {
       
       // Check vendor profile
       const vendorDoc = await getDoc(doc(db, "vendors", userCredential.user.uid));
-      if (vendorDoc.exists() && vendorDoc.data()?.status === "active") {
-        const keysToClear = Object.keys(localStorage).filter(k => k.startsWith("vendor_onboarding"));
-        keysToClear.forEach(k => localStorage.removeItem(k));
-        router.push("/vendor/dashboard");
-        return;
+      if (vendorDoc.exists()) {
+        const status = vendorDoc.data()?.status;
+        if (status === "active" || status === "suspended") {
+          const keysToClear = Object.keys(localStorage).filter(k => k.startsWith("vendor_onboarding"));
+          keysToClear.forEach(k => localStorage.removeItem(k));
+          router.push("/vendor/dashboard");
+          return;
+        }
       }
 
       // Check application status
