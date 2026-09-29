@@ -8,11 +8,19 @@ import { useState } from "react";
 export function SupportTicketDrawer({
   ticket,
   onClose,
-  onUpdateStatus
+  onUpdateStatus,
+  onReply,
+  onStatusChange,
+  onAssign,
+  onAddInternalNote
 }: {
   ticket: AdminSupportTicket | null;
   onClose: () => void;
   onUpdateStatus?: (status: string) => void;
+  onReply?: (text: string) => void;
+  onStatusChange?: (status: string) => void;
+  onAssign?: (assigneeId: string) => void;
+  onAddInternalNote?: (note: string) => void;
 }) {
   const [replyText, setReplyText] = useState("");
 
@@ -169,6 +177,12 @@ export function SupportTicketDrawer({
                   </div>
                   <button 
                     disabled={!replyText.trim()}
+                    onClick={() => {
+                      if (onReply) {
+                        onReply(replyText);
+                        setReplyText("");
+                      }
+                    }}
                     className="px-6 py-2 bg-[var(--color-primary)] text-white rounded-lg text-sm font-bold hover:bg-[var(--color-primary-dark)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
                   >
                     <Send className="w-4 h-4" />

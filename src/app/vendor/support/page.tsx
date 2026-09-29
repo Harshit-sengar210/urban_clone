@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { auth } from "@/backend/firebase";
 import {
   HelpCircle, Plus, ExternalLink, CheckCircle2,
   ArrowRight, BookOpen, MessageSquare, FileText,
@@ -50,6 +51,32 @@ export default function VendorSupportPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [createCategory, setCreateCategory] = useState<SupportCategory>("booking");
   const [toastMessage, setToastMessage] = useState("");
+  const [vendorId, setVendorId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const unsubscribeAuth = auth.onAuthStateChanged((user) => {
+      if (user) {
+        setVendorId(user.uid);
+      }
+    });
+    return () => unsubscribeAuth();
+  }, []);
+
+  useEffect(() => {
+    if (!vendorId) return;
+    const { subscribeToVendorTickets } = require("@/services/vendor/vendorSupportService");
+    const unsub = subscribeToVendorTickets(vendorId, (loadedTickets: SupportTicket[]) => {
+      setTickets(loadedTickets);
+      
+      // Update selected ticket if it's currently open
+      setSelectedTicket(prev => {
+        if (!prev) return null;
+        const updated = loadedTickets.find(t => t.id === prev.id);
+        return updated || prev;
+      });
+    });
+    return () => unsub();
+  }, [vendorId]);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -74,10 +101,17 @@ export default function VendorSupportPage() {
       .slice(0, 3);
   }, [selectedArticle]);
 
-  const handleCreateTicket = (ticket: SupportTicket) => {
-    setTickets(prev => [ticket, ...prev]);
+  const handleCreateTicket = async (ticket: SupportTicket) => {
+    if (!vendorId) return;
     setIsCreateOpen(false);
-    showToast(`Ticket ${ticket.id} created successfully.`);
+    try {
+      const { createSupportTicket } = await import("@/services/vendor/vendorSupportService");
+      await createSupportTicket(vendorId, ticket);
+      showToast(`Ticket ${ticket.id} created successfully.`);
+    } catch (err) {
+      console.error(err);
+      showToast("Failed to create ticket.");
+    }
   };
 
   const openCreateWithCategory = (category: SupportCategory) => {
@@ -85,7 +119,7 @@ export default function VendorSupportPage() {
     setIsCreateOpen(true);
   };
 
-  const handleTicketReply = (ticketId: string, message: string) => {
+  const handleTicketReply = async (ticketId: string, message: string) => {
     const now = new Date().toISOString();
     const newMsg: SupportMessage = {
       id: `msg-${Date.now()}`,
@@ -93,12 +127,13 @@ export default function VendorSupportPage() {
       message,
       createdAt: now,
     };
-    setTickets(prev => prev.map(t =>
-      t.id === ticketId ? { ...t, messages: [...t.messages, newMsg], updatedAt: now } : t
-    ));
-    setSelectedTicket(prev =>
-      prev?.id === ticketId ? { ...prev, messages: [...prev.messages, newMsg], updatedAt: now } : prev
-    );
+    try {
+      const { addTicketMessage } = await import("@/services/vendor/vendorSupportService");
+      await addTicketMessage(ticketId, newMsg);
+    } catch (err) {
+      console.error(err);
+      showToast("Failed to send message.");
+    }
   };
 
   const popularArticles = mockSupportArticles.slice(0, 6);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Search, Filter, ArrowUpDown, Plus, MoreHorizontal, MessageSquare, AlertCircle, Clock, Tag } from "lucide-react";
 import { motion } from "framer-motion";
 import { adminSupportData, type AdminSupportTicket, type SupportTicketStatus } from "@/data/adminSupportData";
@@ -10,9 +10,22 @@ export default function AdminSupportPage() {
   const [activeTab, setActiveTab] = useState<SupportTicketStatus | "all">("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTicket, setSelectedTicket] = useState<AdminSupportTicket | null>(null);
-  
+  const [tickets, setTickets] = useState<AdminSupportTicket[]>([]);
+
+  useEffect(() => {
+    const { subscribeToAdminTickets } = require("@/services/admin/adminSupportService");
+    const unsub = subscribeToAdminTickets((loaded: AdminSupportTicket[]) => {
+      setTickets(loaded);
+      setSelectedTicket(prev => {
+        if (!prev) return null;
+        return loaded.find(t => t.id === prev.id) || prev;
+      });
+    });
+    return () => unsub();
+  }, []);
+
   const filteredTickets = useMemo(() => {
-    let result = adminSupportData.tickets;
+    let result = tickets;
     if (activeTab !== "all") {
       result = result.filter(t => t.status === activeTab);
     }
@@ -51,12 +64,12 @@ export default function AdminSupportPage() {
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
         {[
-          { label: "Total Tickets", value: adminSupportData.summary.total.toLocaleString() },
-          { label: "Open", value: adminSupportData.summary.open, highlight: "text-[var(--color-primary)]" },
-          { label: "Pending", value: adminSupportData.summary.pending },
-          { label: "Urgent", value: adminSupportData.summary.urgent, highlight: "text-rose-600" },
-          { label: "Resolved", value: adminSupportData.summary.resolved.toLocaleString() },
-          { label: "SLA At Risk", value: adminSupportData.summary.slaAtRisk, highlight: "text-amber-600" },
+          { label: "Total Tickets", value: tickets.length.toLocaleString() },
+          { label: "Open", value: tickets.filter(t => t.status === "open").length, highlight: "text-[var(--color-primary)]" },
+          { label: "Pending", value: tickets.filter(t => t.status === "pending_vendor" || t.status === "pending_customer").length },
+          { label: "Urgent", value: tickets.filter(t => t.priority === "urgent").length, highlight: "text-rose-600" },
+          { label: "Resolved", value: tickets.filter(t => t.status === "resolved").length.toLocaleString() },
+          { label: "SLA At Risk", value: tickets.filter(t => t.sla === "at_risk").length, highlight: "text-amber-600" },
         ].map((stat, i) => (
           <div key={i} className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm hover:border-[var(--color-primary)] transition-colors cursor-pointer">
             <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">{stat.label}</p>
@@ -236,9 +249,24 @@ export default function AdminSupportPage() {
       <SupportTicketDrawer
         ticket={selectedTicket}
         onClose={() => setSelectedTicket(null)}
-        onUpdateStatus={(status) => {
-          console.log(`Update support ticket status to ${status}`);
-          setSelectedTicket(null);
+        onReply={async (text) => {
+          if (selectedTicket) {
+            const { adminReplyToTicket } = await import("@/services/admin/adminSupportService");
+            await adminReplyToTicket(selectedTicket.id, text);
+          }
+        }}
+        onUpdateStatus={async (status) => {
+          if (selectedTicket) {
+            const { updateAdminTicketStatus } = await import("@/services/admin/adminSupportService");
+            await updateAdminTicketStatus(selectedTicket.id, status);
+            setSelectedTicket(null);
+          }
+        }}
+        onStatusChange={async (status) => {
+          if (selectedTicket) {
+            const { updateAdminTicketStatus } = await import("@/services/admin/adminSupportService");
+            await updateAdminTicketStatus(selectedTicket.id, status);
+          }
         }}
       />
     </div>
