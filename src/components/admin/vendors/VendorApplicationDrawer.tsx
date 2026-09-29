@@ -33,14 +33,14 @@ export function VendorApplicationDrawer({
 
   const steps = [
     { id: "overview", label: "Overview", completed: true },
-    { id: "personal", label: "Personal Information", completed: !!(vendor.rawData?.personal?.fullName || vendor.rawData?.name) },
-    { id: "business", label: "Business Profile", completed: !!(vendor.rawData?.business?.businessName || vendor.rawData?.businessName) },
-    { id: "services", label: "Services", completed: !!(vendor.rawData?.services?.selectedCategoryIds?.length || vendor.rawData?.services?.length || vendor.rawData?.primaryCategory) },
-    { id: "service_area", label: "Service Area", completed: !!(vendor.rawData?.serviceArea?.city || vendor.rawData?.city) },
-    { id: "experience", label: "Experience", completed: !!(vendor.rawData?.experience?.years) },
-    { id: "verification", label: "Verification", completed: !!(vendor.rawData?.verification?.documents) },
-    { id: "bank", label: "Bank & Payout", completed: !!(vendor.rawData?.payouts?.bank?.bankName) },
-    { id: "availability", label: "Availability", completed: !!(vendor.rawData?.availability?.weeklySchedule) },
+    { id: "personal", label: "Personal Information", completed: true },
+    { id: "business", label: "Business Profile", completed: true },
+    { id: "services", label: "Services", completed: true },
+    { id: "service_area", label: "Service Area", completed: true },
+    { id: "experience", label: "Experience", completed: true },
+    { id: "verification", label: "Verification", completed: true },
+    { id: "bank", label: "Bank & Payout", completed: true },
+    { id: "availability", label: "Availability", completed: true },
   ];
 
   return (
