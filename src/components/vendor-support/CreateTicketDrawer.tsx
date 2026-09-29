@@ -63,19 +63,23 @@ export function CreateTicketDrawer({ isOpen, initialCategory, onClose, onSubmit 
     setTimeout(() => {
       const demoId = `UC-DEMO-${1042 + Math.floor(Math.random() * 100)}`;
       const now = new Date().toISOString();
-      const ticket: SupportTicket = {
+      const ticket: any = {
         id: demoId,
         subject: subject.trim(),
         category,
         description: description.trim(),
         priority,
         status: "open",
-        bookingId: bookingId.trim() || undefined,
         createdAt: now,
         updatedAt: now,
         messages: [{ id: `msg-${Date.now()}`, sender: "partner", message: description.trim(), createdAt: now }],
       };
-      onSubmit(ticket);
+      
+      if (["booking", "earnings", "services"].includes(category) && bookingId.trim()) {
+        ticket.bookingId = bookingId.trim();
+      }
+
+      onSubmit(ticket as SupportTicket);
       setIsSubmitting(false);
       setSuccessId(demoId);
     }, 1500);
