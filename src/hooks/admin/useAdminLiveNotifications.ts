@@ -6,6 +6,13 @@ import { AdminNotification } from "@/data/adminNotificationsData";
 export function useAdminLiveNotifications() {
   const [notifications, setNotifications] = useState<AdminNotification[]>([]);
 
+  const getCreatedAtString = (dateObj: any) => {
+    if (!dateObj) return new Date().toISOString();
+    if (typeof dateObj.toDate === 'function') return dateObj.toDate().toISOString();
+    if (typeof dateObj === 'string') return dateObj;
+    return new Date(dateObj).toISOString();
+  };
+
   useEffect(() => {
     const unsubscribes: (() => void)[] = [];
     const notifsMap = new Map<string, AdminNotification>();
@@ -33,8 +40,8 @@ export function useAdminLiveNotifications() {
             message: `Booking created for ${data.serviceName || "a service"}.`,
             priority: "normal",
             channels: ["in_app"],
-            createdAt: data.createdAt,
-            updatedAt: data.createdAt,
+            createdAt: getCreatedAtString(data.createdAt),
+            updatedAt: getCreatedAtString(data.createdAt),
             readStatus: "unread",
           });
         });
@@ -58,8 +65,8 @@ export function useAdminLiveNotifications() {
             message: `${data.businessName || "A vendor"} has applied to join the platform.`,
             priority: "high",
             channels: ["in_app"],
-            createdAt: data.createdAt,
-            updatedAt: data.createdAt,
+            createdAt: getCreatedAtString(data.createdAt),
+            updatedAt: getCreatedAtString(data.createdAt),
             readStatus: "unread",
           });
         });
@@ -83,8 +90,8 @@ export function useAdminLiveNotifications() {
             message: `${data.name || "A new user"} has joined the platform.`,
             priority: "normal",
             channels: ["in_app"],
-            createdAt: data.createdAt,
-            updatedAt: data.createdAt,
+            createdAt: getCreatedAtString(data.createdAt),
+            updatedAt: getCreatedAtString(data.createdAt),
             readStatus: "unread",
           });
         });
@@ -108,8 +115,8 @@ export function useAdminLiveNotifications() {
             message: data.subject || "A new support ticket was created.",
             priority: "normal",
             channels: ["in_app"],
-            createdAt: data.createdAt,
-            updatedAt: data.createdAt,
+            createdAt: getCreatedAtString(data.createdAt),
+            updatedAt: getCreatedAtString(data.createdAt),
             readStatus: "unread",
           });
         });

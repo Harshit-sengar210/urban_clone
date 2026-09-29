@@ -51,12 +51,12 @@ export default function AdminNotificationsPage() {
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
         {[
-          { label: "Total Notifications", value: adminNotificationsData.summary.total.toLocaleString() },
-          { label: "Unread", value: adminNotificationsData.summary.unread, highlight: "text-[var(--color-primary)]" },
-          { label: "Sent Today", value: adminNotificationsData.summary.sentToday.toLocaleString() },
-          { label: "Scheduled", value: adminNotificationsData.summary.scheduled },
-          { label: "Failed", value: adminNotificationsData.summary.failed, highlight: "text-rose-600" },
-          { label: "Delivery Rate", value: `${adminNotificationsData.summary.deliveryRate}%`, highlight: "text-emerald-600" },
+          { label: "Total Notifications", value: liveNotifications.length.toLocaleString() },
+          { label: "Unread", value: liveNotifications.filter(n => n.readStatus === 'unread').length, highlight: "text-[var(--color-primary)]" },
+          { label: "Sent Today", value: liveNotifications.length.toLocaleString() },
+          { label: "Scheduled", value: 0 },
+          { label: "Failed", value: 0, highlight: "text-rose-600" },
+          { label: "Delivery Rate", value: `100%`, highlight: "text-emerald-600" },
         ].map((stat, i) => (
           <div key={i} className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm hover:border-[var(--color-primary)]/30 transition-colors cursor-pointer group">
             <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">{stat.label}</p>
