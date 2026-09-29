@@ -196,17 +196,19 @@ export function CreateTicketDrawer({ isOpen, initialCategory, onClose, onSubmit 
                     </div>
                   </motion.div>
 
-                  {/* Optional Booking ID */}
-                  <motion.div variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }}>
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5 block">Booking ID <span className="text-slate-300 normal-case font-medium">(optional)</span></label>
-                    <input
-                      type="text"
-                      value={bookingId}
-                      onChange={e => setBookingId(e.target.value)}
-                      placeholder="e.g. BK-4521"
-                      className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500/30 outline-none"
-                    />
-                  </motion.div>
+                  {/* Optional Booking ID - Only shown for relevant categories */}
+                  {["booking", "earnings", "services"].includes(category) && (
+                    <motion.div variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }}>
+                      <label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5 block">Booking ID <span className="text-slate-300 normal-case font-medium">(optional)</span></label>
+                      <input
+                        type="text"
+                        value={bookingId}
+                        onChange={e => setBookingId(e.target.value)}
+                        placeholder="e.g. BK-4521"
+                        className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500/30 outline-none"
+                      />
+                    </motion.div>
+                  )}
 
                   {/* Screenshot */}
                   <motion.div variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }}>
