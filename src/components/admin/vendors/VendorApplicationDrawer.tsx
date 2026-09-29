@@ -33,14 +33,14 @@ export function VendorApplicationDrawer({
 
   const steps = [
     { id: "overview", label: "Overview", completed: true },
-    { id: "personal", label: "Personal Information", completed: true },
-    { id: "business", label: "Business Profile", completed: true },
-    { id: "services", label: "Services", completed: true },
-    { id: "service_area", label: "Service Area", completed: true },
-    { id: "experience", label: "Experience", completed: true },
-    { id: "verification", label: "Verification", completed: true },
-    { id: "bank", label: "Bank & Payout", completed: true },
-    { id: "availability", label: "Availability", completed: true },
+    { id: "personal", label: "Personal Information", completed: !!(vendor.rawData?.personal?.fullName || vendor.rawData?.name) },
+    { id: "business", label: "Business Profile", completed: !!(vendor.rawData?.business?.businessName || vendor.rawData?.businessName) },
+    { id: "services", label: "Services", completed: !!(vendor.rawData?.services?.selectedCategoryIds?.length || vendor.rawData?.services?.length || vendor.rawData?.primaryCategory) },
+    { id: "service_area", label: "Service Area", completed: !!(vendor.rawData?.serviceArea?.city || vendor.rawData?.city) },
+    { id: "experience", label: "Experience", completed: !!(vendor.rawData?.experience?.years) },
+    { id: "verification", label: "Verification", completed: !!(vendor.rawData?.verification?.documents) },
+    { id: "bank", label: "Bank & Payout", completed: !!(vendor.rawData?.payouts?.bank?.bankName) },
+    { id: "availability", label: "Availability", completed: !!(vendor.rawData?.availability?.weeklySchedule) },
   ];
 
   return (
@@ -263,15 +263,15 @@ export function VendorApplicationDrawer({
                   <div className="grid grid-cols-2 gap-4">
                     <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl">
                       <p className="text-xs font-bold text-slate-400 uppercase">Full Name</p>
-                      <p className="text-sm font-bold text-[#0A192F] mt-1">{vendor.rawData?.personal?.fullName || "Not provided"}</p>
+                      <p className="text-sm font-bold text-[#0A192F] mt-1">{vendor.rawData?.personal?.fullName || vendor.rawData?.name || "Not provided"}</p>
                     </div>
                     <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl">
                       <p className="text-xs font-bold text-slate-400 uppercase">Email</p>
-                      <p className="text-sm font-bold text-[#0A192F] mt-1">{vendor.rawData?.email || "Not provided"}</p>
+                      <p className="text-sm font-bold text-[#0A192F] mt-1">{vendor.rawData?.personal?.email || vendor.rawData?.email || "Not provided"}</p>
                     </div>
                     <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl">
                       <p className="text-xs font-bold text-slate-400 uppercase">Phone</p>
-                      <p className="text-sm font-bold text-[#0A192F] mt-1">{vendor.rawData?.personal?.phone || "Not provided"}</p>
+                      <p className="text-sm font-bold text-[#0A192F] mt-1">{vendor.rawData?.personal?.phone || vendor.rawData?.phone || "Not provided"}</p>
                     </div>
                     <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl">
                       <p className="text-xs font-bold text-slate-400 uppercase">DOB</p>
@@ -287,15 +287,15 @@ export function VendorApplicationDrawer({
                   <div className="grid grid-cols-2 gap-4">
                     <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl">
                       <p className="text-xs font-bold text-slate-400 uppercase">Business Name</p>
-                      <p className="text-sm font-bold text-[#0A192F] mt-1">{vendor.rawData?.business?.businessName || "Not provided"}</p>
+                      <p className="text-sm font-bold text-[#0A192F] mt-1">{vendor.rawData?.business?.businessName || vendor.rawData?.businessName || "Not provided"}</p>
                     </div>
                     <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl">
                       <p className="text-xs font-bold text-slate-400 uppercase">Profile Type</p>
-                      <p className="text-sm font-bold text-[#0A192F] mt-1 capitalize">{vendor.rawData?.business?.profileType || "Not provided"}</p>
+                      <p className="text-sm font-bold text-[#0A192F] mt-1 capitalize">{vendor.rawData?.business?.profileType || vendor.rawData?.businessType || "Not provided"}</p>
                     </div>
                     <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl col-span-2">
                       <p className="text-xs font-bold text-slate-400 uppercase">Description</p>
-                      <p className="text-sm text-slate-700 mt-1">{vendor.rawData?.business?.description || "Not provided"}</p>
+                      <p className="text-sm text-slate-700 mt-1">{vendor.rawData?.business?.description || vendor.rawData?.description || "Not provided"}</p>
                     </div>
                   </div>
                 </div>
@@ -314,13 +314,24 @@ export function VendorApplicationDrawer({
                             {cat ? cat.name : c}
                           </span>
                         );
-                      }) : <span className="text-sm">Not provided</span>}
+                      }) : vendor.rawData?.primaryCategory ? (
+                        <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">
+                          {vendor.rawData.primaryCategory}
+                        </span>
+                      ) : <span className="text-sm">Not provided</span>}
                     </div>
                   </div>
                   <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl">
                     <p className="text-xs font-bold text-slate-400 uppercase mb-2">Specific Services</p>
                     <div className="flex flex-wrap gap-2">
                       {vendor.rawData?.services?.selectedServiceIds?.length ? vendor.rawData.services.selectedServiceIds.map((s: string) => {
+                        const srv = serviceCatalog.find(ss => ss.id === s);
+                        return (
+                          <span key={s} className="px-2 py-1 bg-slate-200 text-slate-700 rounded text-xs font-medium">
+                            {srv ? srv.name : s}
+                          </span>
+                        );
+                      }) : Array.isArray(vendor.rawData?.services) && vendor.rawData.services.length > 0 ? vendor.rawData.services.map((s: string) => {
                         const srv = serviceCatalog.find(ss => ss.id === s);
                         return (
                           <span key={s} className="px-2 py-1 bg-slate-200 text-slate-700 rounded text-xs font-medium">
