@@ -45,9 +45,7 @@ export default function VendorLoginPage() {
           router.push("/vendor/onboarding");
           return;
         } else if (status === "submitted" || status === "under_review" || status === "pending_approval") {
-          setError("Your application is currently under review by our team.");
-          await auth.signOut();
-          setIsLoading(false);
+          router.push("/vendor/onboarding/pending");
           return;
         } else if (status === "rejected") {
           setError("Your application has been rejected.");
@@ -105,9 +103,7 @@ export default function VendorLoginPage() {
           router.push("/vendor/onboarding");
           return;
         } else if (status === "submitted" || status === "under_review" || status === "pending_approval") {
-          setError("Your application is currently under review by our team.");
-          await auth.signOut();
-          setIsLoading(false);
+          router.push("/vendor/onboarding/pending");
           return;
         } else if (status === "rejected") {
           setError("Your application has been rejected.");

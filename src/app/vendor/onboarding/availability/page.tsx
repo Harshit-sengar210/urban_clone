@@ -220,7 +220,30 @@ export default function AvailabilitySetupPage() {
     } else {
       setToastMessage("Please review the highlighted time ranges.");
       setTimeout(() => setToastMessage(""), 3000);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      
+      setTimeout(() => {
+        let hasEnabledDay = false;
+        let firstErrorDay: string | null = null;
+        schedule.forEach(day => {
+          if (day.enabled) {
+            hasEnabledDay = true;
+            const [startH, startM] = day.startTime.split(":").map(Number);
+            const [endH, endM] = day.endTime.split(":").map(Number);
+            const diffHours = (endH + endM / 60) - (startH + startM / 60);
+            if (diffHours <= 0 && !firstErrorDay) {
+              firstErrorDay = day.day;
+            }
+          }
+        });
+        
+        if (!hasEnabledDay) {
+          document.getElementById('availability-schedule-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else if (firstErrorDay) {
+          document.getElementById(`day-${firstErrorDay}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else {
+          document.getElementById('onboarding-scroll-container')?.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      }, 100);
       return false;
     }
   };
@@ -249,7 +272,7 @@ export default function AvailabilitySetupPage() {
         </div>
 
         {/* Right Form Area */}
-        <div className="w-full md:w-[60%] md:h-full md:overflow-y-auto bg-white p-6 md:p-12 lg:p-16 flex items-start justify-center order-2">
+        <div id="onboarding-scroll-container" className="w-full md:w-[60%] md:h-full md:overflow-y-auto bg-white p-6 md:p-12 lg:p-16 flex items-start justify-center order-2">
           <motion.div 
             variants={onboardingPageVariants}
             initial="initial"
@@ -310,7 +333,7 @@ export default function AvailabilitySetupPage() {
                 
                 <div className="space-y-3">
                   {schedule.map(dayItem => (
-                    <div key={dayItem.day} className="relative">
+                    <div id={`day-${dayItem.day}`} key={dayItem.day} className="relative">
                       <motion.div 
                         animate={errors[dayItem.day] ? shakeAnimation : {}}
                         className={cn(

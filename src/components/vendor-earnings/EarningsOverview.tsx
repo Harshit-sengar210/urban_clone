@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -12,15 +12,89 @@ interface ChartDataPoint {
 
 interface EarningsOverviewProps {
   data: ChartDataPoint[];
+  rawEarnings?: any[];
 }
 
-export function EarningsOverview({ data }: EarningsOverviewProps) {
+export function EarningsOverview({ data, rawEarnings }: EarningsOverviewProps) {
   const [period, setPeriod] = useState("This Month");
-  const periods = ["Today", "This Week", "This Month", "Last Month", "Last 3 Months", "This Year"];
+  const periods = ["Today", "This Week", "This Month", "This Year"];
+
+  const chartData = useMemo(() => {
+    if (!rawEarnings || rawEarnings.length === 0) return data;
+    
+    const now = new Date();
+    
+    if (period === "Today") {
+      const blocks = [0, 0, 0, 0, 0, 0];
+      const labels = ["8 AM", "11 AM", "2 PM", "5 PM", "8 PM", "11 PM"];
+      
+      rawEarnings.forEach(e => {
+        const d = new Date(e.date);
+        if (d.getDate() === now.getDate() && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()) {
+           const h = d.getHours();
+           let idx = 0;
+           if (h >= 11 && h < 14) idx = 1;
+           else if (h >= 14 && h < 17) idx = 2;
+           else if (h >= 17 && h < 20) idx = 3;
+           else if (h >= 20 && h < 23) idx = 4;
+           else if (h >= 23 || h < 8) idx = 5;
+           blocks[idx] += e.partnerEarnings;
+        }
+      });
+      return labels.map((l, i) => ({ label: l, amount: blocks[i] }));
+    } 
+    
+    if (period === "This Week") {
+      const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+      const blocks = [0, 0, 0, 0, 0, 0, 0];
+      
+      const startOfWeek = new Date(now);
+      startOfWeek.setDate(now.getDate() - now.getDay());
+      startOfWeek.setHours(0,0,0,0);
+      
+      rawEarnings.forEach(e => {
+        const d = new Date(e.date);
+        if (d >= startOfWeek && d <= now) {
+          blocks[d.getDay()] += e.partnerEarnings;
+        }
+      });
+      return days.map((l, i) => ({ label: l, amount: blocks[i] }));
+    }
+    
+    if (period === "This Year") {
+      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      const blocks = new Array(12).fill(0);
+      
+      rawEarnings.forEach(e => {
+        const d = new Date(e.date);
+        if (d.getFullYear() === now.getFullYear()) {
+          blocks[d.getMonth()] += e.partnerEarnings;
+        }
+      });
+      return months.map((l, i) => ({ label: l, amount: blocks[i] }));
+    }
+    
+    // Default to This Month
+    const blocks = [0, 0, 0, 0];
+    rawEarnings.forEach(e => {
+      const d = new Date(e.date);
+      if (d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()) {
+         const day = d.getDate();
+         const weekIdx = Math.min(3, Math.floor((day - 1) / 7));
+         blocks[weekIdx] += e.partnerEarnings;
+      }
+    });
+    return [
+      { label: "Week 1", amount: blocks[0] },
+      { label: "Week 2", amount: blocks[1] },
+      { label: "Week 3", amount: blocks[2] },
+      { label: "Week 4", amount: blocks[3] }
+    ];
+  }, [period, rawEarnings, data]);
 
   // Find max for scaling the chart
-  const maxAmount = Math.max(...data.map(d => d.amount), 1000); // 1000 min scale
-  const totalAmount = data.reduce((sum, d) => sum + d.amount, 0);
+  const maxAmount = Math.max(...chartData.map(d => d.amount), 1000); // 1000 min scale
+  const totalAmount = chartData.reduce((sum, d) => sum + d.amount, 0);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
@@ -73,7 +147,7 @@ export function EarningsOverview({ data }: EarningsOverviewProps) {
 
         {/* Chart Bars */}
         <div className="absolute inset-0 right-16 flex items-end justify-between px-2 sm:px-6">
-          {data.map((point, index) => {
+          {chartData.map((point, index) => {
             const heightPercent = (point.amount / maxAmount) * 100;
             return (
               <div key={index} className="flex flex-col items-center justify-end h-full group relative w-12 sm:w-16">

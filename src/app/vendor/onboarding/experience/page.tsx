@@ -146,7 +146,19 @@ export default function ExperiencePage() {
         setToastMessage("Failed to save. Please try again.");
       }
     } else {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      setTimeout(() => {
+        if (!data.experienceLevel) {
+          document.getElementById('experience-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else if (!data.description || data.description.trim().length < 10) {
+          document.getElementById('description-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else if (data.skills.length === 0) {
+          document.getElementById('skills-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          document.getElementById('onboarding-scroll-container')?.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      }, 100);
+      return false;
     }
   };
 
@@ -193,7 +205,7 @@ export default function ExperiencePage() {
             <motion.div variants={staggerContainer} initial="hidden" animate="visible" className="space-y-12">
               
               {/* Experience Range */}
-              <motion.section variants={staggerItem} className="space-y-4">
+              <motion.section id="experience-section" variants={staggerItem} className="space-y-4">
                 <div className="flex justify-between items-end">
                   <h3 className="text-sm font-semibold text-[var(--color-foreground)]">
                     How much experience do you have?
@@ -238,7 +250,7 @@ export default function ExperiencePage() {
               </motion.section>
 
               {/* About Your Experience */}
-              <motion.section variants={staggerItem} className="space-y-4">
+              <motion.section id="description-section" variants={staggerItem} className="space-y-4">
                 <div className="flex justify-between items-end">
                   <h3 className="text-sm font-semibold text-[var(--color-foreground)]">
                     About Your Experience
@@ -270,7 +282,7 @@ export default function ExperiencePage() {
               </motion.section>
 
               {/* Skills */}
-              <motion.section variants={staggerItem} className="space-y-4">
+              <motion.section id="skills-section" variants={staggerItem} className="space-y-4">
                 <div>
                   <h3 className="text-sm font-semibold text-[var(--color-foreground)] mb-1">
                     Your Key Skills

@@ -119,7 +119,19 @@ export default function ServiceAreaPage() {
         setToastMessage("Failed to save. Please try again.");
       }
     } else {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      setTimeout(() => {
+        if (!data.city) {
+          document.getElementById('city-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else if (!data.locality || data.locality.trim().length < 2) {
+          document.getElementById('locality-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else if (!data.pinCode || !/^\d{6}$/.test(data.pinCode)) {
+          document.getElementById('pincode-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          document.getElementById('onboarding-scroll-container')?.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      }, 100);
+      return false;
     }
   };
 
@@ -142,7 +154,7 @@ export default function ServiceAreaPage() {
       <div className="flex-1 flex flex-col md:flex-row md:overflow-hidden">
         
         {/* Left Form Area */}
-        <div className="w-full md:w-[55%] lg:w-[60%] md:h-full md:overflow-y-auto bg-white p-6 md:p-12 lg:p-16 flex items-start justify-center order-2 md:order-1 border-r border-slate-100">
+        <div id="onboarding-scroll-container" className="w-full md:w-[55%] lg:w-[60%] md:h-full md:overflow-y-auto bg-white p-6 md:p-12 lg:p-16 flex items-start justify-center order-2 md:order-1 border-r border-slate-100">
           <motion.div 
             variants={onboardingPageVariants}
             initial="initial"
@@ -172,14 +184,23 @@ export default function ServiceAreaPage() {
                 
                 <div className="space-y-6">
                   {/* City */}
-                  <motion.div animate={errors.city ? shakeAnimation : {}} className="space-y-1.5 relative">
+                  <motion.div id="city-section" animate={errors.city ? shakeAnimation : {}} className="space-y-1.5 relative">
                     <label className="text-sm font-semibold text-[var(--color-foreground)]">City</label>
-                    <CitySearch value={data.city} onChange={(city) => updateField("city", city)} error={errors.city} />
+                    <CitySearch 
+                      value={data.city} 
+                      onChange={(city) => updateField("city", city)} 
+                      error={errors.city} 
+                      onLocationFound={(loc) => {
+                        updateField("city", loc.city);
+                        updateField("locality", loc.locality);
+                        updateField("pinCode", loc.pinCode);
+                      }}
+                    />
                     {errors.city && <p className="text-xs font-bold text-red-500 absolute -bottom-5 left-0">Please select a city.</p>}
                   </motion.div>
 
                   {/* Locality */}
-                  <motion.div animate={errors.locality ? shakeAnimation : {}} className="space-y-1.5 relative pt-4">
+                  <motion.div id="locality-section" animate={errors.locality ? shakeAnimation : {}} className="space-y-1.5 relative pt-4">
                     <label className="text-sm font-semibold text-[var(--color-foreground)]">Area / Locality</label>
                     <div className="relative">
                       <input
@@ -199,7 +220,7 @@ export default function ServiceAreaPage() {
                   </motion.div>
 
                   {/* PIN Code */}
-                  <motion.div animate={errors.pinCode ? shakeAnimation : {}} className="space-y-1.5 relative pt-4">
+                  <motion.div id="pincode-section" animate={errors.pinCode ? shakeAnimation : {}} className="space-y-1.5 relative pt-4">
                     <label className="text-sm font-semibold text-[var(--color-foreground)]">PIN Code</label>
                     <input
                       type="text"

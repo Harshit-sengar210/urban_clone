@@ -15,6 +15,7 @@ export function VendorProfileDrawer({
   earnings,
   onSuspend,
   onRestore,
+  onRemove,
   onViewApplication
 }: {
   vendor: AdminVendor | null;
@@ -25,6 +26,7 @@ export function VendorProfileDrawer({
   earnings: VendorEarnings;
   onSuspend: (vendor: AdminVendor) => void;
   onRestore: (vendor: AdminVendor) => void;
+  onRemove: (vendor: AdminVendor) => void;
   onViewApplication: (vendor: AdminVendor) => void;
 }) {
   const [activeTab, setActiveTab] = useState<"overview" | "services" | "bookings" | "reviews" | "earnings">("overview");
@@ -82,7 +84,12 @@ export function VendorProfileDrawer({
                 )}
                 {vendor.status === "suspended" && (
                   <button onClick={() => onRestore(vendor)} className="px-4 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-xs font-bold uppercase tracking-wider hover:bg-emerald-100 transition-colors">
-                    Restore
+                    Unsuspend
+                  </button>
+                )}
+                {(vendor.status === "approved" || vendor.status === "suspended") && (
+                  <button onClick={() => onRemove(vendor)} className="px-4 py-1.5 bg-red-50 text-red-700 border border-red-200 rounded-full text-xs font-bold uppercase tracking-wider hover:bg-red-100 transition-colors">
+                    Permanent Remove
                   </button>
                 )}
                 <button onClick={() => onViewApplication(vendor)} className="px-4 py-1.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-full text-xs font-bold uppercase tracking-wider hover:bg-blue-100 transition-colors">

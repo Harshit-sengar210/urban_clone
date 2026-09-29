@@ -114,29 +114,33 @@ export default function PersonalInfoPage() {
 
   const handleContinue = async () => {
     if (!validateAll()) {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-      return;
+      setTimeout(() => {
+        if (data.fullName.trim().length < 3) {
+          document.getElementById('fullName')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else if (!data.dateOfBirth) {
+          document.getElementById('dob')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else if (!data.gender) {
+          document.getElementById('gender-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else if (data.phone.length < 10) {
+          document.getElementById('phone')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else {
+          window.scrollTo({ top: 0, behavior: "smooth" });
+          document.getElementById('onboarding-scroll-container')?.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      }, 100);
+      return false;
     }
     try {
       setToastMessage("Saving profile...");
       let photoUrl = data.profilePhoto;
       if (photoUrl && photoUrl.startsWith("data:image")) {
-        const res = await fetch("/api/upload", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ image: photoUrl })
-        });
-        if (res.ok) {
-          const result = await res.json();
-          photoUrl = result.url;
-          setData(prev => ({ ...prev, profilePhoto: photoUrl }));
-        } else {
-          let errData;
-          try {
-            errData = await res.json();
-          } catch (e) {}
-          throw new Error(errData?.error || "Failed to upload image to server.");
-        }
+        const { getStorage, ref, uploadString, getDownloadURL } = await import("firebase/storage");
+        const { storage } = await import("@/backend/firebase");
+        
+        const fileRef = ref(storage, `vendors/profile_${Date.now()}`);
+        await uploadString(fileRef, photoUrl, 'data_url');
+        photoUrl = await getDownloadURL(fileRef);
+        setData(prev => ({ ...prev, profilePhoto: photoUrl }));
       }
 
       const dataToSave = { ...data, profilePhoto: photoUrl };
@@ -166,7 +170,7 @@ export default function PersonalInfoPage() {
         </div>
 
         {/* Right Form Area */}
-        <div className="w-full md:w-[60%] lg:w-[65%] md:h-full md:overflow-y-auto bg-white p-6 md:p-12 lg:p-16 flex items-start justify-center">
+        <div id="onboarding-scroll-container" className="w-full md:w-[60%] lg:w-[65%] md:h-full md:overflow-y-auto bg-white p-6 md:p-12 lg:p-16 flex items-start justify-center">
           <motion.div 
             variants={onboardingPageVariants}
             initial="initial"
@@ -242,7 +246,7 @@ export default function PersonalInfoPage() {
                   </div>
 
                   {/* Gender */}
-                  <div className="pt-4">
+                  <div className="pt-4" id="gender-section">
                     <GenderSelector 
                       value={data.gender} 
                       onChange={(val) => { updateField("gender", val); setErrors(prev => ({...prev, gender: undefined})); }}

@@ -158,12 +158,29 @@ export default function AdminVendorsPage() {
           showToast("Approval failed");
           return;
         }
+      } else if (modalType === "suspend" || modalType === "restore" || modalType === "remove") {
+        try {
+          const { updateVendorStatus } = await import("@/services/admin/adminVendorsService");
+          const status = modalType === "suspend" ? "suspended" : modalType === "restore" ? "active" : "removed";
+          await updateVendorStatus(modalVendor.id, status, payload?.reason);
+          
+          if (modalType === "remove") {
+            const { deleteDoc, doc } = await import("firebase/firestore");
+            const { db } = await import("@/backend/firebase");
+            await deleteDoc(doc(db, "vendors", modalVendor.id));
+            msg = "Vendor permanently removed.";
+          } else {
+            msg = modalType === "suspend" ? "Vendor suspended." : "Vendor restored.";
+          }
+        } catch (error) {
+          console.error("Failed to update vendor", error);
+          showToast("Error updating vendor status");
+          return;
+        }
       } else {
         let newStatus = "";
         if (modalType === "reject") newStatus = "rejected";
         else if (modalType === "request_changes") newStatus = "needs_changes";
-        else if (modalType === "suspend") newStatus = "suspended";
-        else if (modalType === "restore") newStatus = "approved";
         
         if (newStatus) {
           try {
@@ -171,10 +188,7 @@ export default function AdminVendorsPage() {
               status: newStatus,
               updatedAt: new Date()
             });
-            msg = modalType === "reject" ? "Vendor application rejected." :
-                  modalType === "request_changes" ? "Changes requested from vendor." :
-                  modalType === "suspend" ? "Vendor suspended." :
-                  "Vendor restored.";
+            msg = modalType === "reject" ? "Vendor application rejected." : "Changes requested from vendor.";
           } catch (error) {
             console.error("Failed to update status", error);
             showToast("Error updating vendor status");
@@ -302,6 +316,7 @@ export default function AdminVendorsPage() {
         earnings={{ total: 0, thisMonth: 0, pending: 0, completedPayouts: 0 }}
         onSuspend={(v) => { setModalType("suspend"); setModalVendor(v); }}
         onRestore={(v) => { setModalType("restore"); setModalVendor(v); }}
+        onRemove={(v) => { setModalType("remove"); setModalVendor(v); }}
         onViewApplication={async (v) => {
           const { getAdminVendorApplication } = await import("@/services/admin/adminVendorsService");
           const appId = v.rawData?.applicationId || v.id;

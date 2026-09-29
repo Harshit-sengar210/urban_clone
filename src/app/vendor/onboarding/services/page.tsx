@@ -179,8 +179,26 @@ export default function ServicesPage() {
         setToastMessage("Failed to save. Please try again.");
       }
     } else {
-      // Scroll to top to see errors ideally, or rely on visual feedback
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      setTimeout(() => {
+        if (data.selectedCategoryIds.length === 0) {
+          document.getElementById('section-categories')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else if (data.selectedServiceIds.length === 0) {
+          document.getElementById('section-services')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else {
+          const missingConfigs = data.selectedServiceIds.some(
+            serviceId => !data.configurations.find(c => c.serviceId === serviceId && c.experience && c.startingPrice && c.duration)
+          );
+          if (missingConfigs) {
+            document.getElementById('section-configs')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          } else if (data.skills.length === 0) {
+            document.getElementById('section-skills')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          } else {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            document.getElementById('onboarding-scroll-container')?.scrollTo({ top: 0, behavior: 'smooth' });
+          }
+        }
+      }, 100);
+      return false;
     }
   };
 
@@ -209,7 +227,7 @@ export default function ServicesPage() {
       <div className="flex-1 flex flex-col md:flex-row md:overflow-hidden">
         
         {/* Left Form Area */}
-        <div className="w-full md:w-[60%] lg:w-[65%] md:h-full md:overflow-y-auto bg-white p-6 md:p-12 lg:p-16 flex items-start justify-center order-2 md:order-1 border-r border-slate-100">
+        <div id="onboarding-scroll-container" className="w-full md:w-[60%] lg:w-[65%] md:h-full md:overflow-y-auto bg-white p-6 md:p-12 lg:p-16 flex items-start justify-center order-2 md:order-1 border-r border-slate-100">
           <motion.div 
             variants={onboardingPageVariants}
             initial="initial"
@@ -232,7 +250,7 @@ export default function ServicesPage() {
             <motion.div variants={staggerContainer} initial="hidden" animate="visible" className="space-y-12">
               
               {/* Category Selection */}
-              <motion.section variants={staggerItem}>
+              <motion.section id="section-categories" variants={staggerItem}>
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-base font-bold text-[var(--color-foreground)]">
                     1. Choose Categories {data.selectedCategoryIds.length > 0 && <span className="text-[var(--color-primary)]">({data.selectedCategoryIds.length})</span>}
@@ -288,7 +306,7 @@ export default function ServicesPage() {
               {/* Service Selection */}
               <AnimatePresence>
                 {data.selectedCategoryIds.length > 0 && (
-                  <motion.section variants={expandCollapse} initial="hidden" animate="visible" exit="hidden">
+                  <motion.section id="section-services" variants={expandCollapse} initial="hidden" animate="visible" exit="hidden">
                     <h3 className="text-base font-bold text-[var(--color-foreground)] mb-4">
                       2. Select Services {data.selectedServiceIds.length > 0 && <span className="text-[var(--color-primary)]">({data.selectedServiceIds.length})</span>}
                     </h3>
@@ -334,7 +352,7 @@ export default function ServicesPage() {
                     {/* Service Configurations */}
                     <AnimatePresence>
                       {data.selectedServiceIds.length > 0 && (
-                        <motion.div variants={expandCollapse} initial="hidden" animate="visible" exit="hidden" className="space-y-4">
+                        <motion.div id="section-configs" variants={expandCollapse} initial="hidden" animate="visible" exit="hidden" className="space-y-4">
                           <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Configure Services</h4>
                           {data.selectedServiceIds.map((serviceId) => {
                             const service = serviceCatalog.find(s => s.id === serviceId);
@@ -363,7 +381,7 @@ export default function ServicesPage() {
               {/* Skills Section */}
               <AnimatePresence>
                 {data.selectedServiceIds.length > 0 && (
-                  <motion.section variants={expandCollapse} initial="hidden" animate="visible" exit="hidden">
+                  <motion.section id="section-skills" variants={expandCollapse} initial="hidden" animate="visible" exit="hidden">
                     <h3 className="text-base font-bold text-[var(--color-foreground)] mb-4">
                       3. Professional Skills <span className="text-xs font-normal text-slate-400 ml-2">Optional</span>
                     </h3>

@@ -174,6 +174,20 @@ export default function BusinessProfilePage() {
         console.error("Error saving business profile:", error);
         setToastMessage("Failed to save. Please try again.");
       }
+    } else {
+      setTimeout(() => {
+        if (data.profileType === "individual" && !data.professionalName.trim()) {
+          document.getElementById('professionalName')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else if (data.profileType === "business" && !data.businessName.trim()) {
+          document.getElementById('businessName')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else if (data.profileType === "business" && !data.businessType) {
+          document.getElementById('businessType')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          document.getElementById('onboarding-scroll-container')?.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      }, 100);
+      return false;
     }
   };
 
@@ -198,7 +212,7 @@ export default function BusinessProfilePage() {
         </div>
 
         {/* Right Form Area */}
-        <div className="w-full md:w-[60%] lg:w-[65%] md:h-full md:overflow-y-auto bg-white p-6 md:p-12 lg:p-16 flex items-start justify-center">
+        <div id="onboarding-scroll-container" className="w-full md:w-[60%] lg:w-[65%] md:h-full md:overflow-y-auto bg-white p-6 md:p-12 lg:p-16 flex items-start justify-center">
           <motion.div 
             variants={onboardingPageVariants}
             initial="initial"

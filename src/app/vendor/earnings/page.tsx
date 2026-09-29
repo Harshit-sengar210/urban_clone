@@ -33,6 +33,7 @@ export default function VendorEarningsPage() {
       availableForPayout: 0,
     },
     chartData: [],
+    rawEarnings: [],
     serviceEarnings: [],
     recentEarnings: [],
     payouts: [],
@@ -129,6 +130,15 @@ export default function VendorEarningsPage() {
         return { service, amount, percentage, color };
       }).sort((a, b) => b.amount - a.amount);
       
+      const payouts = rawEarnings.map(e => ({
+        id: `PO-${e.id.substring(0, 6).toUpperCase()}`,
+        date: e.date,
+        method: e.paymentMethod === "cash" ? "Cash" : "Online Transfer",
+        status: "paid",
+        amount: e.partnerEarnings,
+        maskedAccount: e.paymentMethod === "cash" ? "Collected from customer" : "Bank Transfer"
+      }));
+      
       setEarningsData({
         summary: {
           totalEarnings: total,
@@ -136,10 +146,11 @@ export default function VendorEarningsPage() {
           pendingEarnings: pending,
           availableForPayout: available,
         },
+        rawEarnings,
         chartData,
         serviceEarnings,
         recentEarnings: rawEarnings.slice(0, 10),
-        payouts: [] // No real payouts system yet
+        payouts: payouts.slice(0, 10)
       });
     });
     
@@ -165,7 +176,7 @@ export default function VendorEarningsPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
-            <EarningsOverview data={earningsData.chartData} />
+            <EarningsOverview data={earningsData.chartData} rawEarnings={earningsData.rawEarnings} />
           </div>
           <div className="lg:col-span-1">
             <EarningsByService data={earningsData.serviceEarnings} />

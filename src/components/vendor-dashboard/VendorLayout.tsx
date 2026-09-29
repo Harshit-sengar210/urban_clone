@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { VendorSidebar } from "./VendorSidebar";
 import { VendorTopbar } from "./VendorTopbar";
+import { SuspensionAlert } from "./SuspensionAlert";
 
 export function VendorLayout({ children }: { children: React.ReactNode }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -17,10 +18,12 @@ export function VendorLayout({ children }: { children: React.ReactNode }) {
       <div className="flex-1 md:ml-64 flex flex-col min-h-screen w-full transition-all">
         <VendorTopbar onOpenSidebar={() => setIsSidebarOpen(true)} />
         
-        <main className="flex-1 w-full max-w-full">
+        <main className="flex-1 w-full max-w-full relative">
           {children}
         </main>
       </div>
+
+      <SuspensionAlert />
     </div>
   );
 }

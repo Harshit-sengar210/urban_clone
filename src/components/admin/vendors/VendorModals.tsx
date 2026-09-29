@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, AlertTriangle, ShieldCheck, UserPlus, CheckCircle, HelpCircle, XCircle } from "lucide-react";
 import type { AdminVendor } from "@/data/adminVendorsData";
 
-export type VendorModalType = "suspend" | "restore" | "approve" | "reject" | "request_changes" | "add" | null;
+export type VendorModalType = "suspend" | "restore" | "approve" | "reject" | "request_changes" | "add" | "remove" | null;
 
 interface VendorModalsProps {
   modalType: VendorModalType;
@@ -151,11 +151,24 @@ export function VendorModals({ modalType, selectedVendor, onClose, onConfirmActi
                   </p>
                 </div>
               </div>
+              <div className="p-6">
+                <label className="block text-sm font-bold text-slate-700 mb-2">Suspension reason *</label>
+                <textarea 
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  className="w-full border border-slate-200 rounded-lg p-3 text-sm focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none resize-none h-24"
+                  placeholder="Reason for suspension (visible to vendor)..."
+                />
+              </div>
               <div className="p-4 bg-slate-50 flex justify-end gap-3 rounded-b-2xl">
                 <button onClick={onClose} className="px-4 py-2 text-sm font-bold text-slate-600 hover:bg-slate-200/50 rounded-lg transition-colors">
                   Cancel
                 </button>
-                <button onClick={() => onConfirmAction()} className="px-4 py-2 text-sm font-bold text-white bg-amber-500 hover:bg-amber-600 rounded-lg shadow-sm transition-colors">
+                <button 
+                  onClick={() => onConfirmAction({ reason })} 
+                  disabled={!reason.trim()}
+                  className="px-4 py-2 text-sm font-bold text-white bg-amber-500 hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg shadow-sm transition-colors"
+                >
                   Suspend Vendor
                 </button>
               </div>
@@ -227,6 +240,35 @@ export function VendorModals({ modalType, selectedVendor, onClose, onConfirmActi
               </div>
             </>
           )}
+
+          {/* REMOVE MODAL */}
+          {modalType === "remove" && selectedVendor && (
+            <>
+              <div className="p-6 border-b border-slate-100 flex items-start gap-4">
+                <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center flex-shrink-0">
+                  <XCircle className="w-5 h-5 text-red-500" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-[#0A192F]">Permanently Remove Vendor?</h3>
+                  <p className="text-sm text-slate-500 mt-1">
+                    This will permanently remove the vendor's profile from the platform. This action cannot be undone.
+                  </p>
+                </div>
+              </div>
+              <div className="p-4 bg-slate-50 flex justify-end gap-3 rounded-b-2xl">
+                <button onClick={onClose} className="px-4 py-2 text-sm font-bold text-slate-600 hover:bg-slate-200/50 rounded-lg transition-colors">
+                  Cancel
+                </button>
+                <button 
+                  onClick={() => onConfirmAction()} 
+                  className="px-4 py-2 text-sm font-bold text-white bg-red-500 hover:bg-red-600 rounded-lg shadow-sm transition-colors"
+                >
+                  Remove Vendor
+                </button>
+              </div>
+            </>
+          )}
+
         </motion.div>
       </motion.div>
     </AnimatePresence>

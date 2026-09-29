@@ -20,9 +20,10 @@ interface CitySearchProps {
   value: string;
   onChange: (city: string) => void;
   error?: boolean;
+  onLocationFound?: (location: { city: string, locality: string, pinCode: string }) => void;
 }
 
-export function CitySearch({ value, onChange, error }: CitySearchProps) {
+export function CitySearch({ value, onChange, error, onLocationFound }: CitySearchProps) {
   const [query, setQuery] = useState(value);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
@@ -60,11 +61,47 @@ export function CitySearch({ value, onChange, error }: CitySearchProps) {
     setIsLoadingLocation(true);
     setIsOpen(false);
     
-    // Mock location delay
-    setTimeout(() => {
-      handleSelect("Ghaziabad");
-      setIsLoadingLocation(false);
-    }, 1500);
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          try {
+            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${position.coords.latitude}&lon=${position.coords.longitude}&format=json`);
+            const data = await res.json();
+            
+            const city = data.address.city || data.address.state_district || data.address.county || "Delhi";
+            const locality = data.address.suburb || data.address.neighbourhood || data.address.village || data.address.residential || data.address.town || "Central";
+            const pinCode = data.address.postcode || "110001";
+            
+            handleSelect(city);
+            if (onLocationFound) {
+              onLocationFound({ city, locality, pinCode });
+            }
+          } catch (error) {
+            handleSelect("Ghaziabad");
+            if (onLocationFound) {
+              onLocationFound({ city: "Ghaziabad", locality: "Indirapuram", pinCode: "201014" });
+            }
+          } finally {
+            setIsLoadingLocation(false);
+          }
+        },
+        (error) => {
+          handleSelect("Ghaziabad");
+          if (onLocationFound) {
+            onLocationFound({ city: "Ghaziabad", locality: "Indirapuram", pinCode: "201014" });
+          }
+          setIsLoadingLocation(false);
+        }
+      );
+    } else {
+      setTimeout(() => {
+        handleSelect("Ghaziabad");
+        if (onLocationFound) {
+          onLocationFound({ city: "Ghaziabad", locality: "Indirapuram", pinCode: "201014" });
+        }
+        setIsLoadingLocation(false);
+      }, 1000);
+    }
   };
 
   return (

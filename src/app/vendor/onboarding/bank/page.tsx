@@ -155,7 +155,14 @@ export default function BankSetupPage() {
         setToastMessage("Please fill in all required fields correctly.");
       }
       setTimeout(() => setToastMessage(""), 3000);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      
+      setTimeout(() => {
+        if (data.method === "bank_account") {
+          document.getElementById('bank-details-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else {
+          document.getElementById('upi-details-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 100);
       return false;
     }
   };
@@ -181,7 +188,7 @@ export default function BankSetupPage() {
         </div>
 
         {/* Right Form Area */}
-        <div className="w-full md:w-[60%] md:h-full md:overflow-y-auto bg-white p-6 md:p-12 lg:p-16 flex items-start justify-center order-2">
+        <div id="onboarding-scroll-container" className="w-full md:w-[60%] md:h-full md:overflow-y-auto bg-white p-6 md:p-12 lg:p-16 flex items-start justify-center order-2">
           <motion.div 
             variants={onboardingPageVariants}
             initial="initial"
@@ -265,6 +272,7 @@ export default function BankSetupPage() {
               <AnimatePresence mode="wait">
                 {data.method === "bank_account" ? (
                   <motion.section 
+                    id="bank-details-section"
                     key="bank-form"
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -377,6 +385,7 @@ export default function BankSetupPage() {
                   </motion.section>
                 ) : (
                   <motion.section 
+                    id="upi-details-section"
                     key="upi-form"
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}

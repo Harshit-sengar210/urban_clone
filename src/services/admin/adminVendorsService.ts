@@ -23,7 +23,7 @@ export const subscribeToPendingApplications = (onUpdate: (vendors: AdminVendor[]
 export const subscribeToApprovedVendors = (onUpdate: (vendors: AdminVendor[]) => void) => {
   const q = query(
     collection(db, "vendors"),
-    where("status", "==", "active")
+    where("status", "in", ["active", "suspended"])
   );
 
   return onSnapshot(q, (snapshot) => {
@@ -96,6 +96,25 @@ export const approveVendorApplication = async (applicationId: string) => {
   });
 };
 
+export const updateVendorStatus = async (vendorId: string, status: "active" | "suspended" | "removed", reason?: string) => {
+  const vendorRef = doc(db, "vendors", vendorId);
+  
+  const updates: any = {
+    status,
+    updatedAt: serverTimestamp()
+  };
+  
+  if (status === "suspended" && reason) {
+    updates.suspensionReason = reason;
+  }
+  
+  if (status === "active") {
+    updates.suspensionReason = null; // Clear reason
+  }
+
+  await updateDoc(vendorRef, updates);
+};
+
 // Map raw Firestore application data to the Admin UI model
 const mapApplicationToAdminVendor = (id: string, d: any, fallbackStatus: VendorStatus): AdminVendor => {
   let mappedStatus: VendorStatus = fallbackStatus;
@@ -158,7 +177,7 @@ const mapVendorProfileToAdminVendor = (id: string, d: any): AdminVendor => {
     }),
     primaryCategory: d.primaryCategory || "General",
     city: d.city || "N/A",
-    status: "approved",
+    status: (d.status as VendorStatus) || "approved",
     rating: d.rating || 0,
     reviewCount: d.reviewCount || 0,
     bookingCount: d.bookingCount || 0,

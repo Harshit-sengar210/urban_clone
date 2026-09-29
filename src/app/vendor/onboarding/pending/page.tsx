@@ -3,6 +3,10 @@
 import { motion } from "framer-motion";
 import { ClipboardCheck, ArrowRight, ShieldCheck, Clock3, UserCheck, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { auth, db } from "@/backend/firebase";
+import { doc, onSnapshot } from "firebase/firestore";
 import { VendorOnboardingHeader } from "@/components/vendor-onboarding/VendorOnboardingHeader";
 
 const staggerContainer = {
@@ -25,6 +29,28 @@ const staggerItem: any = {
 };
 
 export default function PendingVerificationPage() {
+  const router = useRouter();
+
+  useEffect(() => {
+    const unsubscribeAuth = auth.onAuthStateChanged((user) => {
+      if (user) {
+        // Listen to vendor profile for real-time approval
+        const unsubscribeDoc = onSnapshot(doc(db, "vendors", user.uid), (docSnap) => {
+          if (docSnap.exists() && docSnap.data().status === "active") {
+            const keysToClear = Object.keys(localStorage).filter(k => k.startsWith("vendor_onboarding"));
+            keysToClear.forEach(k => localStorage.removeItem(k));
+            router.push("/vendor/dashboard");
+          }
+        });
+        return () => unsubscribeDoc();
+      } else {
+        router.push("/vendor/login");
+      }
+    });
+    
+    return () => unsubscribeAuth();
+  }, [router]);
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans selection:bg-[var(--color-primary)] selection:text-white">
       <VendorOnboardingHeader />

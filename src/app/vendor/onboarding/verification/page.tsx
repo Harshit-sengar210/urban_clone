@@ -166,28 +166,25 @@ export default function VerificationPage() {
     if (!isAadhaarSaved || !isPanSaved) {
       setToastMessage("Aadhaar and PAN Card are mandatory to continue.");
       setErrors({ documentType: true });
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      document.getElementById('verification-documents-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       setTimeout(() => setToastMessage(""), 3000);
-      return;
+      return false;
     }
     
     try {
       setToastMessage("Securing verification documents...");
       let finalDocuments = { ...savedDocuments };
       
-      // Upload all base64 images to Cloudinary
+      const { getStorage, ref, uploadString, getDownloadURL } = await import("firebase/storage");
+      const { storage } = await import("@/backend/firebase");
+
+      // Upload all base64 images to Firebase Storage
       for (const [docType, docData] of Object.entries(finalDocuments)) {
         for (const [side, uploadState] of Object.entries(docData.uploads)) {
           if (uploadState.previewUrl && uploadState.previewUrl.startsWith("data:image")) {
-            const res = await fetch("/api/upload", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ image: uploadState.previewUrl })
-            });
-            if (res.ok) {
-              const result = await res.json();
-              finalDocuments[docType].uploads[side].previewUrl = result.url;
-            }
+            const fileRef = ref(storage, `vendors/verification_${Date.now()}_${docType}_${side}`);
+            await uploadString(fileRef, uploadState.previewUrl, 'data_url');
+            finalDocuments[docType].uploads[side].previewUrl = await getDownloadURL(fileRef);
           }
         }
       }
@@ -263,12 +260,10 @@ export default function VerificationPage() {
 
             <motion.div variants={staggerContainer} initial="hidden" animate="visible" className="space-y-12">
               
-              <motion.div variants={staggerItem}>
-                <PrivacyCard />
-              </motion.div>
+
 
               {/* Document Type */}
-              <motion.section variants={staggerItem} className="space-y-4">
+              <motion.section id="verification-documents-section" variants={staggerItem} className="space-y-4">
                 <div>
                   <h3 className="text-sm font-semibold text-[var(--color-foreground)] mb-1">
                     Select Identity Document
@@ -286,6 +281,8 @@ export default function VerificationPage() {
                   {errors.documentType && <p className="text-xs font-bold text-red-500 mt-2">Please select a document type.</p>}
                 </motion.div>
               </motion.section>
+
+
 
               <AnimatePresence mode="wait">
                 {data.documentType && (
@@ -435,6 +432,10 @@ export default function VerificationPage() {
                 )}
               </AnimatePresence>
 
+            </motion.div>
+
+            <motion.div variants={staggerItem} className="mt-8">
+              <PrivacyCard />
             </motion.div>
 
             <div className="mt-12">

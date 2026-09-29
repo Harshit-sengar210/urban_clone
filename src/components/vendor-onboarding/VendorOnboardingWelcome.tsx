@@ -18,7 +18,7 @@ export function VendorOnboardingWelcome() {
   ];
 
   return (
-    <div className="max-w-xl mx-auto w-full px-6 py-4 md:py-6 lg:py-8">
+    <div className="max-w-xl mx-auto w-full px-6 py-2 md:py-4">
       <OnboardingProgress currentStep={1} totalSteps={9} label="Getting Started" />
 
       <motion.div
@@ -26,23 +26,23 @@ export function VendorOnboardingWelcome() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.2 }}
       >
-        <span className="inline-block px-3 py-1 bg-purple-50 text-[var(--color-primary)] text-[10px] font-black uppercase tracking-widest rounded-full mb-4">
+        <span className="inline-block px-3 py-1 bg-purple-50 text-[var(--color-primary)] text-[10px] font-black uppercase tracking-widest rounded-full mb-2">
           UrbanClone Partner
         </span>
         
-        <h1 className="text-3xl md:text-4xl font-extrabold text-[var(--color-foreground)] tracking-tight mb-3">
+        <h1 className="text-3xl md:text-4xl font-extrabold text-[var(--color-foreground)] tracking-tight mb-2">
           Become an UrbanClone Partner
         </h1>
         
-        <p className="text-slate-500 font-medium leading-relaxed mb-4">
+        <p className="text-slate-500 text-sm font-medium leading-relaxed mb-3">
           Turn your skills into a growing service business. Complete your profile, get verified, and start connecting with customers in your service area.
         </p>
 
-        <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 mb-6">
-          <p className="font-bold text-sm text-slate-900 uppercase tracking-widest mb-3">
+        <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 mb-4">
+          <p className="font-bold text-sm text-slate-900 uppercase tracking-widest mb-2">
             Your onboarding includes
           </p>
-          <ul className="space-y-2 mb-4">
+          <ul className="space-y-1.5 mb-3">
             {checklist.map((item, idx) => (
               <motion.li 
                 key={idx}
@@ -77,14 +77,16 @@ export function VendorOnboardingWelcome() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.8 }}
         >
-          <Button size="lg" className="w-full h-12 text-base font-bold shadow-xl shadow-primary/20 group hover:-translate-y-0.5 transition-all" asChild>
+          <Button size="lg" className="w-full h-11 text-base font-bold shadow-xl shadow-primary/20 group hover:-translate-y-0.5 transition-all" asChild>
             <Link href="/vendor/onboarding/personal">
-              Let's Get Started
-              <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+              <span className="flex items-center justify-center">
+                Let's Get Started
+                <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+              </span>
             </Link>
           </Button>
 
-          <div className="mt-4 text-center">
+          <div className="mt-2 text-center">
             <p className="text-sm font-medium text-slate-500">
               Already have an account?{" "}
               <Link href="/vendor/login" className="font-bold text-[var(--color-primary)] hover:underline">
