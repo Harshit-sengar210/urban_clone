@@ -2,6 +2,8 @@
 
 import { Menu, Search, Bell, Plus, User, ChevronRight } from "lucide-react";
 import { usePathname } from "next/navigation";
+import Link from "next/link";
+import { useAdminLiveNotifications } from "@/hooks/admin/useAdminLiveNotifications";
 
 export function AdminTopbar({
   mobileOpen,
@@ -12,6 +14,8 @@ export function AdminTopbar({
 }) {
   const pathname = usePathname();
   const pathSegments = pathname.split('/').filter(Boolean);
+  const liveNotifications = useAdminLiveNotifications();
+  const unreadCount = liveNotifications.filter(n => n.readStatus === "unread").length;
 
   return (
     <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-slate-200 h-16 flex items-center px-4 lg:px-8 gap-4 shadow-sm">
@@ -71,10 +75,12 @@ export function AdminTopbar({
         </button>
 
         {/* Notifications */}
-        <button className="relative w-9 h-9 flex items-center justify-center rounded-full hover:bg-slate-50 text-slate-500 transition-colors">
+        <Link href="/admin/notifications" className="relative w-9 h-9 flex items-center justify-center rounded-full hover:bg-slate-50 text-slate-500 transition-colors">
           <Bell className="w-5 h-5" />
-          <span className="absolute top-2 right-2.5 w-2 h-2 bg-rose-500 rounded-full border border-white" />
-        </button>
+          {unreadCount > 0 && (
+            <span className="absolute top-2 right-2.5 w-2 h-2 bg-rose-500 rounded-full border border-white" />
+          )}
+        </Link>
 
         {/* Profile */}
         <button className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center border border-slate-200 overflow-hidden hover:ring-2 hover:ring-[var(--color-primary)]/20 transition-all ml-1">

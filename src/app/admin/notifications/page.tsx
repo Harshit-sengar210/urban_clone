@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { Search, Filter, Plus, Settings, Mail, Bell, Shield, Calendar, Tag, MoreHorizontal, CheckSquare, ShieldAlert } from "lucide-react";
 import { motion } from "framer-motion";
 import { adminNotificationsData, type AdminNotification } from "@/data/adminNotificationsData";
+import { useAdminLiveNotifications } from "@/hooks/admin/useAdminLiveNotifications";
 import { NotificationDetailsDrawer } from "@/components/admin/notifications/NotificationDetailsDrawer";
 
 export default function AdminNotificationsPage() {
@@ -11,8 +12,10 @@ export default function AdminNotificationsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedNotification, setSelectedNotification] = useState<AdminNotification | null>(null);
   
+  const liveNotifications = useAdminLiveNotifications();
+  
   const filteredInbox = useMemo(() => {
-    let result = adminNotificationsData.inbox;
+    let result = liveNotifications.length > 0 ? liveNotifications : adminNotificationsData.inbox;
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       result = result.filter(n => 
@@ -22,7 +25,7 @@ export default function AdminNotificationsPage() {
       );
     }
     return result;
-  }, [searchQuery]);
+  }, [searchQuery, liveNotifications]);
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in duration-500 pb-12">
