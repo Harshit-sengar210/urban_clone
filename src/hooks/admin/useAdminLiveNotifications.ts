@@ -27,12 +27,15 @@ export function useAdminLiveNotifications() {
           const id = `booking-${doc.id}`;
           notifsMap.set(id, {
             id,
+            name: "New Booking Received",
             type: "booking",
             title: "New Booking Received",
             message: `Booking created for ${data.serviceName || "a service"}.`,
+            priority: "normal",
+            channels: ["in_app"],
             createdAt: data.createdAt,
+            updatedAt: data.createdAt,
             readStatus: "unread",
-            actionLink: "/admin/bookings"
           });
         });
         updateNotifs();
@@ -49,12 +52,15 @@ export function useAdminLiveNotifications() {
           const id = `vendor-${doc.id}`;
           notifsMap.set(id, {
             id,
+            name: "New Vendor Application",
             type: "security",
             title: "New Vendor Application",
             message: `${data.businessName || "A vendor"} has applied to join the platform.`,
+            priority: "high",
+            channels: ["in_app"],
             createdAt: data.createdAt,
+            updatedAt: data.createdAt,
             readStatus: "unread",
-            actionLink: "/admin/vendors"
           });
         });
         updateNotifs();
@@ -71,12 +77,15 @@ export function useAdminLiveNotifications() {
           const id = `user-${doc.id}`;
           notifsMap.set(id, {
             id,
+            name: "New User Registered",
             type: "system",
             title: "New User Registered",
             message: `${data.name || "A new user"} has joined the platform.`,
+            priority: "normal",
+            channels: ["in_app"],
             createdAt: data.createdAt,
+            updatedAt: data.createdAt,
             readStatus: "unread",
-            actionLink: "/admin/users"
           });
         });
         updateNotifs();
@@ -93,12 +102,15 @@ export function useAdminLiveNotifications() {
           const id = `ticket-${doc.id}`;
           notifsMap.set(id, {
             id,
-            type: "system",
+            name: "New Support Ticket",
+            type: "support",
             title: `New Support Ticket`,
             message: data.subject || "A new support ticket was created.",
+            priority: "normal",
+            channels: ["in_app"],
             createdAt: data.createdAt,
+            updatedAt: data.createdAt,
             readStatus: "unread",
-            actionLink: "/admin/support"
           });
         });
         updateNotifs();
