@@ -59,6 +59,22 @@ export default function AdminVendorsPage() {
   // Drawer States
   const [profileDrawerVendor, setProfileDrawerVendor] = useState<AdminVendor | null>(null);
   const [appDrawerVendor, setAppDrawerVendor] = useState<AdminVendor | null>(null);
+
+  // Sync drawer states with real-time updates from Firebase
+  useEffect(() => {
+    if (profileDrawerVendor) {
+      const updated = realVendors.find(v => v.id === profileDrawerVendor.id);
+      if (updated && updated.status !== profileDrawerVendor.status) {
+        setProfileDrawerVendor(updated);
+      }
+    }
+    if (appDrawerVendor) {
+      const updated = realVendors.find(v => v.id === appDrawerVendor.id);
+      if (updated && updated.status !== appDrawerVendor.status) {
+        setAppDrawerVendor(updated);
+      }
+    }
+  }, [realVendors, profileDrawerVendor, appDrawerVendor]);
   
   // Modal States
   const [modalType, setModalType] = useState<VendorModalType>(null);
@@ -203,8 +219,12 @@ export default function AdminVendorsPage() {
     showToast(msg);
     setModalType(null);
     setModalVendor(null);
-    setAppDrawerVendor(null);
-    setProfileDrawerVendor(null);
+    
+    // Only close drawers if we permanently removed them
+    if (modalType === "remove") {
+      setAppDrawerVendor(null);
+      setProfileDrawerVendor(null);
+    }
   };
 
   return (
