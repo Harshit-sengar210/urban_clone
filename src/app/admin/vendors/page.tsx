@@ -148,10 +148,10 @@ export default function AdminVendorsPage() {
   };
 
   const handleRowClick = (vendor: AdminVendor) => {
-    if (vendor.status === "approved" || vendor.status === "suspended") {
-      setProfileDrawerVendor(vendor);
-    } else {
+    if (vendor.status === "pending") {
       setAppDrawerVendor(vendor);
+    } else {
+      setProfileDrawerVendor(vendor);
     }
   };
 
