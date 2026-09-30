@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle2 } from "lucide-react";
-import { collection, query, where, onSnapshot, or, orderBy, updateDoc, doc, arrayUnion, serverTimestamp, deleteField } from "firebase/firestore";
+import { collection, query, where, onSnapshot, or, orderBy, updateDoc, doc, arrayUnion, serverTimestamp, deleteField, increment } from "firebase/firestore";
 import { db } from "@/backend/firebase";
 
 import { VendorLayout } from "@/components/vendor-dashboard/VendorLayout";
@@ -273,6 +273,14 @@ export default function VendorBookingsPage() {
             amountCollected: Number(data.amountCollected) || 0,
             paymentScreenshot: data.screenshotBase64 || null,
           } : {}),
+        }).then(() => {
+          // If the booking was completed, also increment the vendor's bookingCount in their profile
+          if (newStatus === "completed" && user?.uid) {
+            const vendorRef = doc(db, "vendors", user.uid);
+            updateDoc(vendorRef, {
+              bookingCount: increment(1)
+            }).catch(err => console.error("Error updating vendor booking count", err));
+          }
         }).catch(err => console.error("Error updating booking", err));
       }
 
