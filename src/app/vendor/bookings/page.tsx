@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle2 } from "lucide-react";
-import { collection, query, where, onSnapshot, or, orderBy } from "firebase/firestore";
+import { collection, query, where, onSnapshot, or, orderBy, updateDoc, doc, arrayUnion, serverTimestamp, deleteField } from "firebase/firestore";
 import { db } from "@/backend/firebase";
 
 import { VendorLayout } from "@/components/vendor-dashboard/VendorLayout";
@@ -189,12 +189,10 @@ export default function VendorBookingsPage() {
     
     // Update in Firestore
     try {
-      await import("firebase/firestore").then(({ updateDoc, doc }) => {
-        return updateDoc(doc(db, "bookings", booking.id), {
-          status: "confirmed",
-          vendorId: user?.uid,
-          professional: user?.name || "Professional",
-        });
+      await updateDoc(doc(db, "bookings", booking.id), {
+        status: "confirmed",
+        vendorId: user?.uid,
+        professional: user?.name || "Professional",
       });
     } catch (e) {
       console.error("Failed to accept booking", e);
@@ -209,10 +207,8 @@ export default function VendorBookingsPage() {
     showToast("Status updated to On The Way.");
     
     try {
-      await import("firebase/firestore").then(({ updateDoc, doc }) => {
-        return updateDoc(doc(db, "bookings", booking.id), {
-          status: "on_the_way",
-        });
+      await updateDoc(doc(db, "bookings", booking.id), {
+        status: "on_the_way",
       });
     } catch (e) {
       console.error("Failed to update status", e);
@@ -248,39 +244,37 @@ export default function VendorBookingsPage() {
       }
 
       // Firestore update
-      import("firebase/firestore").then(({ updateDoc, doc, arrayUnion, serverTimestamp }) => {
-        const bookingRef = doc(db, "bookings", actionBooking.booking.id);
+      const bookingRef = doc(db, "bookings", actionBooking.booking.id);
 
-        if (isVendorCancel) {
-          // Re-queue: clear vendor assignment, log the cancellation history
-          updateDoc(bookingRef, {
-            status: "pending",
-            vendorId: null,
-            professional: "Assigning...",
-            vendorCancelHistory: arrayUnion({
-              vendorId: user?.uid || "",
-              vendorName: user?.name || "Vendor",
-              reason: data || "Vendor cancelled",
-              cancelledAt: new Date().toISOString(),
-            }),
-            lastVendorCancelledAt: serverTimestamp(),
-          }).catch(err => console.error("Error re-queuing booking", err));
-        } else {
-          updateDoc(bookingRef, {
-            status: newStatus,
-            ...(newStatus === "rejected" ? { cancellationReason: data || "" } : {}),
-            ...(newStatus === "in_progress" || newStatus === "completed"
-              ? { vendorId: user?.uid, professional: user?.name || "Professional" }
-              : {}),
-            ...(newStatus === "completed" && data ? {
-              paymentStatus: "paid",
-              paymentMethod: data.paymentType === "cash" ? "cod" : "upi",
-              amountCollected: Number(data.amountCollected) || 0,
-              paymentScreenshot: data.screenshotBase64 || null,
-            } : {}),
-          }).catch(err => console.error("Error updating booking", err));
-        }
-      });
+      if (isVendorCancel) {
+        // Re-queue: clear vendor assignment, log the cancellation history
+        updateDoc(bookingRef, {
+          status: "pending",
+          vendorId: deleteField(),
+          professional: "Assigning...",
+          vendorCancelHistory: arrayUnion({
+            vendorId: user?.uid || "",
+            vendorName: user?.name || "Vendor",
+            reason: data || "Vendor cancelled",
+            cancelledAt: new Date().toISOString(),
+          }),
+          lastVendorCancelledAt: serverTimestamp(),
+        }).catch(err => console.error("Error re-queuing booking", err));
+      } else {
+        updateDoc(bookingRef, {
+          status: newStatus,
+          ...(newStatus === "rejected" ? { cancellationReason: data || "" } : {}),
+          ...(newStatus === "in_progress" || newStatus === "completed"
+            ? { vendorId: user?.uid, professional: user?.name || "Professional" }
+            : {}),
+          ...(newStatus === "completed" && data ? {
+            paymentStatus: "paid",
+            paymentMethod: data.paymentType === "cash" ? "cod" : "upi",
+            amountCollected: Number(data.amountCollected) || 0,
+            paymentScreenshot: data.screenshotBase64 || null,
+          } : {}),
+        }).catch(err => console.error("Error updating booking", err));
+      }
 
       setIsSubmittingModal(false);
 
