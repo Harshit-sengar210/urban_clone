@@ -3,7 +3,7 @@
 import { BookingStatus } from "@/data/bookings";
 import { cn } from "@/lib/utils";
 
-const STATUS_MAP: Record<BookingStatus, { label: string; cls: string }> = {
+const STATUS_MAP: Record<BookingStatus, { label: string; cls: string; pulse?: boolean }> = {
   confirmed:       { label: "Confirmed",       cls: "bg-green-50  text-green-700  border-green-100" },
   assigned:        { label: "Assigned",        cls: "bg-blue-50   text-blue-700   border-blue-100" },
   on_the_way:      { label: "On The Way",      cls: "bg-sky-50    text-sky-700    border-sky-100" },
@@ -12,7 +12,7 @@ const STATUS_MAP: Record<BookingStatus, { label: string; cls: string }> = {
   cancelled:       { label: "Cancelled",       cls: "bg-red-50    text-red-600    border-red-100" },
   rescheduled:     { label: "Rescheduled",     cls: "bg-yellow-50 text-yellow-700 border-yellow-100" },
   pending_payment: { label: "Pending Payment", cls: "bg-rose-50   text-rose-700   border-rose-100" },
-  pending:         { label: "Pending",         cls: "bg-gray-50   text-gray-700   border-gray-100" },
+  pending:         { label: "Searching for Professional", cls: "bg-amber-50 text-amber-700 border-amber-200", pulse: true },
   rejected:        { label: "Rejected",        cls: "bg-red-100   text-red-800    border-red-200" },
 };
 
@@ -25,10 +25,16 @@ export function BookingStatusBadge({ status, className }: BookingStatusBadgeProp
   const config = STATUS_MAP[status as keyof typeof STATUS_MAP] || { label: status || "Unknown", cls: "bg-gray-50 text-gray-700 border-gray-100" };
   return (
     <span className={cn(
-      "inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border",
+      "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border",
       config.cls,
       className
     )}>
+      {config.pulse && (
+        <span className="relative flex h-1.5 w-1.5">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+          <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500" />
+        </span>
+      )}
       {config.label}
     </span>
   );

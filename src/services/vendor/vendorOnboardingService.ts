@@ -17,8 +17,8 @@ export const getMyApplication = async (): Promise<VendorApplication | null> => {
 
 export const createDraftApplication = async (email: string): Promise<VendorApplication> => {
   const uid = auth.currentUser?.uid;
-  if (!uid) throw new Error("Must be authenticated");
-  
+  if (!uid) throw new Error("Must be authenticated to create application");
+
   const draft: Partial<VendorApplication> = {
     applicationId: uid,
     vendorId: uid,
@@ -29,13 +29,11 @@ export const createDraftApplication = async (email: string): Promise<VendorAppli
       percentage: 0,
       completedSections: []
     },
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
+    createdAt: serverTimestamp() as any,
+    updatedAt: serverTimestamp() as any,
   };
 
-  await setDoc(doc(db, COLLECTION, uid), draft);
-  
-  // Return typed object (approximate for initial state)
+  await setDoc(doc(db, COLLECTION, uid), draft, { merge: true });
   return draft as VendorApplication;
 };
 
@@ -45,44 +43,86 @@ export const getOrCreateMyApplication = async (email: string): Promise<VendorApp
   return createDraftApplication(email);
 };
 
-export const saveSection = async (section: keyof VendorApplication, data: any, stepName: string, uid?: string) => {
+/**
+ * Saves a single onboarding section (e.g. "personal", "business") to Firestore.
+ *
+ * Uses updateDoc so that "progress.currentStep" is treated as a nested path,
+ * not a literal field name with a dot. Falls back to setDoc if the doc doesn't
+ * exist yet (first save after signup edge case).
+ */
+export const saveSection = async (
+  section: keyof VendorApplication,
+  data: any,
+  stepName: string,
+  uid?: string
+): Promise<void> => {
   const finalUid = uid || auth.currentUser?.uid;
-  if (!finalUid) throw new Error("Must be authenticated");
+  if (!finalUid) throw new Error("Must be authenticated to save data");
 
   const docRef = doc(db, COLLECTION, finalUid);
 
-  // Use JSON parse/stringify to guarantee stripping of all undefined values, functions, or complex objects
-  const sanitizedData = JSON.parse(JSON.stringify(data));
-  
-  console.log(`[vendorOnboardingService] Saving section ${section}:`, sanitizedData);
-  
-  const payload = {
+  // Sanitize: strip undefined values, functions, etc.
+  // null values are preserved (needed for optional fields like profilePhoto)
+  let sanitizedData: any;
+  try {
+    sanitizedData = JSON.parse(JSON.stringify(data));
+  } catch (e) {
+    console.error(`[saveSection] Failed to sanitize data for section ${section}:`, e);
+    throw new Error("Data could not be serialized for saving.");
+  }
+
+  console.log(`[saveSection] Saving "${section}" for uid=${finalUid}:`, sanitizedData);
+
+  // updateDoc correctly resolves dot-notation keys as nested field paths.
+  // e.g. "progress.currentStep" updates progress.currentStep, not a literal key.
+  const updatePayload: Record<string, any> = {
     [section]: sanitizedData,
     updatedAt: serverTimestamp(),
-    "progress.currentStep": stepName
+    "progress.currentStep": stepName,
   };
-  
-  console.log(`[vendorOnboardingService] Final payload:`, payload);
-  
+
   try {
-    await setDoc(docRef, payload, { merge: true });
-    console.log(`[vendorOnboardingService] Successfully saved section ${section}`);
-  } catch (error) {
-    console.error(`[vendorOnboardingService] Error saving section ${section}:`, error);
-    throw error;
+    // Try updateDoc first (doc must already exist)
+    await updateDoc(docRef, updatePayload);
+    console.log(`[saveSection] ✅ updateDoc succeeded for section "${section}"`);
+  } catch (err: any) {
+    if (err?.code === "not-found") {
+      // Doc doesn't exist yet — create it first, then retry
+      console.warn(`[saveSection] Doc not found, creating draft first...`);
+      await setDoc(docRef, {
+        applicationId: finalUid,
+        vendorId: finalUid,
+        email: auth.currentUser?.email || "",
+        status: "draft",
+        progress: { currentStep: stepName, percentage: 0, completedSections: [] },
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        [section]: sanitizedData,
+      });
+      console.log(`[saveSection] ✅ setDoc (first write) succeeded for section "${section}"`);
+    } else {
+      console.error(`[saveSection] ❌ Failed to save section "${section}":`, err);
+      throw err;
+    }
   }
 };
 
-export const submitApplication = async () => {
+/**
+ * Marks the application as submitted so the admin panel picks it up.
+ * Sets status = "submitted" and records the submission timestamp.
+ */
+export const submitApplication = async (): Promise<void> => {
   const uid = auth.currentUser?.uid;
-  if (!uid) throw new Error("Must be authenticated");
-  
+  if (!uid) throw new Error("Must be authenticated to submit application");
+
   const docRef = doc(db, COLLECTION, uid);
   await updateDoc(docRef, {
     status: "submitted",
     submittedAt: serverTimestamp(),
-    applicationSubmittedAt: serverTimestamp(), // Added to match admin mapping
+    applicationSubmittedAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
-    "progress.percentage": 100
+    "progress.percentage": 100,
+    "progress.currentStep": "review",
   });
+  console.log(`[submitApplication] ✅ Application ${uid} submitted successfully`);
 };

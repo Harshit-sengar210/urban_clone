@@ -1,19 +1,20 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { ShieldCheck, Briefcase } from "lucide-react";
+import { ShieldCheck, Briefcase, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
-import { serviceCategories, serviceCatalog, VendorService, ServiceCategory } from "@/data/mockVendorServices";
+import { serviceCategories, serviceCatalog, CustomService } from "@/data/mockVendorServices";
 import { summaryUpdate } from "./animations";
 
 interface VendorServiceSummaryProps {
   selectedCategoryIds: string[];
   selectedServiceIds: string[];
   skills: string[];
-  configurations: any[]; // We will type this properly in the page
+  configurations: any[];
+  customServices?: CustomService[];
 }
 
-export function VendorServiceSummary({ selectedCategoryIds, selectedServiceIds, skills, configurations }: VendorServiceSummaryProps) {
+export function VendorServiceSummary({ selectedCategoryIds, selectedServiceIds, skills, configurations, customServices = [] }: VendorServiceSummaryProps) {
   const [identity, setIdentity] = useState<{ name: string, type: string }>({ name: "Your Name", type: "Professional" });
 
   useEffect(() => {
@@ -29,7 +30,9 @@ export function VendorServiceSummary({ selectedCategoryIds, selectedServiceIds, 
   }, []);
 
   const selectedCats = serviceCategories.filter(c => selectedCategoryIds.includes(c.id));
-  const selectedServs = serviceCatalog.filter(s => selectedServiceIds.includes(s.id));
+  // Merge catalog + custom services, then filter by selected ids
+  const allServices = [...serviceCatalog, ...customServices];
+  const selectedServs = allServices.filter(s => selectedServiceIds.includes(s.id));
 
   // Determine starting price (minimum among configured)
   const configuredPrices = configurations
@@ -84,17 +87,25 @@ export function VendorServiceSummary({ selectedCategoryIds, selectedServiceIds, 
                         <h4 className="text-sm font-bold text-slate-800 mb-1">{category.name}</h4>
                         {catServices.length > 0 ? (
                           <div className="flex flex-wrap gap-1">
-                            {catServices.map(service => (
-                              <motion.span 
-                                key={service.id}
-                                layout
-                                initial={{ opacity: 0, scale: 0.8 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                className="text-[11px] font-medium bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md"
-                              >
-                                {service.name}
-                              </motion.span>
-                            ))}
+                            {catServices.map(service => {
+                              const isCustomSvc = 'isCustom' in service && service.isCustom;
+                              return (
+                                <motion.span
+                                  key={service.id}
+                                  layout
+                                  initial={{ opacity: 0, scale: 0.8 }}
+                                  animate={{ opacity: 1, scale: 1 }}
+                                  className={`text-[11px] font-medium px-2 py-0.5 rounded-md flex items-center gap-1 ${
+                                    isCustomSvc
+                                      ? 'bg-violet-100 text-violet-700'
+                                      : 'bg-slate-100 text-slate-600'
+                                  }`}
+                                >
+                                  {isCustomSvc && <Sparkles className="w-2.5 h-2.5" />}
+                                  {service.name}
+                                </motion.span>
+                              );
+                            })}
                           </div>
                         ) : (
                           <p className="text-[11px] font-medium text-slate-400">0 services</p>

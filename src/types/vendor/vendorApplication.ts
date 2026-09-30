@@ -30,11 +30,21 @@ export interface ServiceConfiguration {
   serviceType: "customer_location" | "online" | "vendor_location" | "both";
 }
 
+export interface CustomServiceEntry {
+  id: string;
+  categoryId: string;
+  name: string;
+  description: string;
+  basePriceHint?: number;
+  isCustom: true;
+}
+
 export interface VendorServicesData {
   selectedCategoryIds: string[];
   selectedServiceIds: string[];
   configurations: ServiceConfiguration[];
   skills: string[];
+  customServices: CustomServiceEntry[];
 }
 
 export interface VendorServiceArea {

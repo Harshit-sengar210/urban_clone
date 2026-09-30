@@ -42,11 +42,16 @@ export function VendorOnboardingProvider({ children }: { children: ReactNode }) 
 
   const fetchApp = async () => {
     try {
-      if (!auth.currentUser) return;
+      // Guard: if auth user is not ready, skip fetch silently
+      if (!auth.currentUser) {
+        console.warn("[VendorOnboardingProvider] fetchApp called before auth ready — skipping");
+        return;
+      }
       const email = auth.currentUser.email || "";
       const app = await getOrCreateMyApplication(email);
       setApplication(app);
     } catch (e: any) {
+      console.error("[VendorOnboardingProvider] fetchApp error:", e);
       setError(e.message || "Failed to load application");
     }
   };
@@ -87,7 +92,11 @@ export function VendorOnboardingProvider({ children }: { children: ReactNode }) 
     try {
       const uid = application?.vendorId || auth.currentUser?.uid;
       await saveSection(section, data, stepName, uid);
-      await fetchApp(); // Refresh local state
+      // Optimistically update local state so the section data is immediately available
+      // without waiting for a full re-fetch (which could fail if auth is timing out)
+      setApplication(prev => prev ? { ...prev, [section]: data } : prev);
+      // Also refresh from Firestore in background to stay in sync
+      fetchApp().catch(e => console.warn("[handleSave] Background refresh failed:", e));
     } catch (e: any) {
       setError(e.message || `Failed to save ${section}`);
       throw e;

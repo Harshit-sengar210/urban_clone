@@ -19,15 +19,15 @@ export default function AdminVendorsPage() {
   const [activeTab, setActiveTab] = useState<VendorTabFilter>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedVendors, setSelectedVendors] = useState<Set<string>>(new Set());
-  
+
   const { pendingVendors, approvedVendors, isLoading } = useAdminVendors();
-  
+
   useEffect(() => {
     const fixMissingAvatars = async () => {
       try {
         const { getDoc, doc, updateDoc, collection, getDocs } = await import("firebase/firestore");
         const { db } = await import("@/backend/firebase");
-        
+
         const vendorsSnap = await getDocs(collection(db, "vendors"));
         for (const vDoc of vendorsSnap.docs) {
           const vData = vDoc.data();
@@ -47,7 +47,7 @@ export default function AdminVendorsPage() {
     };
     fixMissingAvatars();
   }, []);
-  
+
   const realVendors = useMemo(() => {
     // Deduplicate vendors by ID to prevent React duplicate key errors 
     // during the split-second race condition between Firestore collections updates
@@ -60,22 +60,6 @@ export default function AdminVendorsPage() {
   const [profileDrawerVendor, setProfileDrawerVendor] = useState<AdminVendor | null>(null);
   const [appDrawerVendor, setAppDrawerVendor] = useState<AdminVendor | null>(null);
 
-  // Sync drawer states with real-time updates from Firebase
-  useEffect(() => {
-    if (profileDrawerVendor) {
-      const updated = realVendors.find(v => v.id === profileDrawerVendor.id);
-      if (updated && updated.status !== profileDrawerVendor.status) {
-        setProfileDrawerVendor(updated);
-      }
-    }
-    if (appDrawerVendor) {
-      const updated = realVendors.find(v => v.id === appDrawerVendor.id);
-      if (updated && updated.status !== appDrawerVendor.status) {
-        setAppDrawerVendor(updated);
-      }
-    }
-  }, [realVendors, profileDrawerVendor, appDrawerVendor]);
-  
   // Modal States
   const [modalType, setModalType] = useState<VendorModalType>(null);
   const [modalVendor, setModalVendor] = useState<AdminVendor | null>(null);
@@ -110,7 +94,7 @@ export default function AdminVendorsPage() {
   const filteredVendors = useMemo(() => {
     // Only use real vendors from Firestore. Do not use dummy data.
     let result = realVendors;
-    
+
     // Tab Filter
     if (activeTab !== "all") {
       result = result.filter(v => v.status === activeTab);
@@ -119,9 +103,9 @@ export default function AdminVendorsPage() {
     // Search Filter
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      result = result.filter(v => 
-        v.name.toLowerCase().includes(q) || 
-        v.businessName.toLowerCase().includes(q) || 
+      result = result.filter(v =>
+        v.name.toLowerCase().includes(q) ||
+        v.businessName.toLowerCase().includes(q) ||
         v.id.toLowerCase().includes(q) ||
         v.city.toLowerCase().includes(q) ||
         v.primaryCategory.toLowerCase().includes(q)
@@ -148,10 +132,10 @@ export default function AdminVendorsPage() {
   };
 
   const handleRowClick = (vendor: AdminVendor) => {
-    if (vendor.status === "pending") {
-      setAppDrawerVendor(vendor);
-    } else {
+    if (vendor.status === "approved" || vendor.status === "suspended") {
       setProfileDrawerVendor(vendor);
+    } else {
+      setAppDrawerVendor(vendor);
     }
   };
 
@@ -162,7 +146,7 @@ export default function AdminVendorsPage() {
 
   const handleConfirmModal = async (payload?: any) => {
     let msg = "";
-    
+
     if (modalVendor) {
       if (modalType === "approve") {
         try {
@@ -179,7 +163,7 @@ export default function AdminVendorsPage() {
           const { updateVendorStatus } = await import("@/services/admin/adminVendorsService");
           const status = modalType === "suspend" ? "suspended" : modalType === "restore" ? "active" : "removed";
           await updateVendorStatus(modalVendor.id, status, payload?.reason);
-          
+
           if (modalType === "remove") {
             const { deleteDoc, doc } = await import("firebase/firestore");
             const { db } = await import("@/backend/firebase");
@@ -197,7 +181,7 @@ export default function AdminVendorsPage() {
         let newStatus = "";
         if (modalType === "reject") newStatus = "rejected";
         else if (modalType === "request_changes") newStatus = "needs_changes";
-        
+
         if (newStatus) {
           try {
             await updateDoc(doc(db, "vendorApplications", modalVendor.id), {
@@ -219,12 +203,8 @@ export default function AdminVendorsPage() {
     showToast(msg);
     setModalType(null);
     setModalVendor(null);
-    
-    // Only close drawers if we permanently removed them
-    if (modalType === "remove") {
-      setAppDrawerVendor(null);
-      setProfileDrawerVendor(null);
-    }
+    setAppDrawerVendor(null);
+    setProfileDrawerVendor(null);
   };
 
   return (
@@ -235,17 +215,17 @@ export default function AdminVendorsPage() {
           <h1 className="text-2xl font-bold text-[#0A192F] mb-1">Vendors</h1>
           <p className="text-sm text-slate-500">Manage service professionals, applications, verification, and marketplace access.</p>
         </div>
-        
+
         <div className="flex items-center gap-2">
           <div className="relative hidden sm:block">
-            <button 
+            <button
               onClick={() => setIsMoreActionsOpen(!isMoreActionsOpen)}
               className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm font-bold hover:bg-slate-50 shadow-sm transition-colors"
             >
               <span>More Actions</span>
               <ChevronDown className={`w-4 h-4 transition-transform ${isMoreActionsOpen ? 'rotate-180' : ''}`} />
             </button>
-            
+
             <AnimatePresence>
               {isMoreActionsOpen && (
                 <motion.div
@@ -254,20 +234,20 @@ export default function AdminVendorsPage() {
                   exit={{ opacity: 0, y: 10 }}
                   className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-slate-100 py-2 z-50"
                 >
-                  <button 
+                  <button
                     onClick={() => { setIsMoreActionsOpen(false); showToast("Exporting vendors list..."); }}
                     className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 font-medium"
                   >
                     Export All Vendors
                   </button>
-                  <button 
+                  <button
                     onClick={() => { setIsMoreActionsOpen(false); showToast("Opening import dialog..."); }}
                     className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 font-medium"
                   >
                     Import Vendors
                   </button>
                   <div className="border-t border-slate-100 my-1"></div>
-                  <button 
+                  <button
                     onClick={() => { setIsMoreActionsOpen(false); showToast("Vendor reports compiling..."); }}
                     className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 font-medium"
                   >
@@ -277,7 +257,7 @@ export default function AdminVendorsPage() {
               )}
             </AnimatePresence>
           </div>
-          <button 
+          <button
             onClick={() => setModalType("add")}
             className="flex flex-1 sm:flex-none justify-center items-center gap-2 px-4 h-10 bg-[var(--color-primary)] text-white rounded-lg text-sm font-bold hover:bg-[var(--color-primary-dark)] transition-colors shadow-sm"
           >
@@ -288,10 +268,10 @@ export default function AdminVendorsPage() {
       </div>
 
       <VendorStatusTabs activeTab={activeTab} setActiveTab={setActiveTab} counts={counts} />
-      
+
       <VendorSummaryCards summary={summaryData as any} />
-      
-      <VendorToolbar 
+
+      <VendorToolbar
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         filterCount={0}
@@ -316,7 +296,7 @@ export default function AdminVendorsPage() {
         </div>
       )}
 
-      <VendorTable 
+      <VendorTable
         vendors={filteredVendors}
         selectedVendors={selectedVendors}
         onSelectVendor={handleSelectVendor}
@@ -327,7 +307,7 @@ export default function AdminVendorsPage() {
       />
 
       {/* Drawers */}
-      <VendorProfileDrawer 
+      <VendorProfileDrawer
         vendor={profileDrawerVendor}
         onClose={() => setProfileDrawerVendor(null)}
         services={[]}
@@ -339,17 +319,20 @@ export default function AdminVendorsPage() {
         onRemove={(v) => { setModalType("remove"); setModalVendor(v); }}
         onViewApplication={async (v) => {
           const { getAdminVendorApplication } = await import("@/services/admin/adminVendorsService");
-          const appId = v.rawData?.applicationId || v.id;
+          // Try applicationId first, then fall back to the vendor's own id
+          const appId = v.rawData?.applicationId || v.rawData?.vendorId || v.id;
           const app = await getAdminVendorApplication(appId);
           if (app) {
             setAppDrawerVendor(app);
           } else {
-            showToast("Application not found.");
+            // Last resort: open the drawer with the vendor's own data
+            // rawData already contains personal/business/etc if approved post-fix
+            setAppDrawerVendor(v);
           }
         }}
       />
 
-      <VendorApplicationDrawer 
+      <VendorApplicationDrawer
         vendor={appDrawerVendor}
         onClose={() => setAppDrawerVendor(null)}
         onApprove={(v) => { setModalType("approve"); setModalVendor(v); }}
@@ -362,7 +345,7 @@ export default function AdminVendorsPage() {
       />
 
       {/* Modals */}
-      <VendorModals 
+      <VendorModals
         modalType={modalType}
         selectedVendor={modalVendor}
         onClose={() => { setModalType(null); setModalVendor(null); }}

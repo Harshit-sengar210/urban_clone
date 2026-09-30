@@ -48,9 +48,48 @@ export const getApplicationById = async (applicationId: string) => {
 export const getAdminVendorApplication = async (applicationId: string): Promise<AdminVendor | null> => {
   const docRef = doc(db, "vendorApplications", applicationId);
   const snap = await getDoc(docRef);
+  
   if (snap.exists()) {
-    return mapApplicationToAdminVendor(snap.id, snap.data(), "pending");
+    const appData = snap.data();
+    
+    // If the application data has the nested personal section, use it directly
+    if (appData.personal) {
+      return mapApplicationToAdminVendor(snap.id, appData, "pending");
+    }
+    
+    // Otherwise, try to enrich with data from the vendors collection
+    // (vendors collection has all nested sections embedded since approval)
+    const vendorId = appData.vendorId || appData.userId || applicationId;
+    const vendorRef = doc(db, "vendors", vendorId);
+    const vendorSnap = await getDoc(vendorRef);
+    
+    if (vendorSnap.exists()) {
+      const vendorData = vendorSnap.data();
+      // Merge: application doc takes priority for status/timing, vendors doc fills in nested sections
+      const mergedData = {
+        ...appData,
+        personal: vendorData.personal || appData.personal || null,
+        business: vendorData.business || appData.business || null,
+        services: vendorData.services_data || appData.services || null,
+        serviceArea: vendorData.serviceArea || appData.serviceArea || null,
+        experience: vendorData.experience || appData.experience || null,
+        verification: vendorData.verification || appData.verification || null,
+        payouts: vendorData.payouts || appData.payouts || null,
+        availability: vendorData.availability || appData.availability || null,
+      };
+      return mapApplicationToAdminVendor(snap.id, mergedData, "pending");
+    }
+    
+    return mapApplicationToAdminVendor(snap.id, appData, "pending");
   }
+  
+  // If no application doc found at all, try vendors collection directly
+  const vendorRef = doc(db, "vendors", applicationId);
+  const vendorSnap = await getDoc(vendorRef);
+  if (vendorSnap.exists()) {
+    return mapVendorProfileToAdminVendor(vendorSnap.id, vendorSnap.data());
+  }
+  
   return null;
 };
 
@@ -63,6 +102,8 @@ export const approveVendorApplication = async (applicationId: string) => {
   const vendorId = appData.vendorId || appData.userId || applicationId;
   
   // Create vendor profile in 'vendors' collection
+  // IMPORTANT: embed all nested application sections so the admin drawer can read
+  // vendor.rawData?.personal?.fullName, vendor.rawData?.experience, etc.
   const vendorProfileRef = doc(db, "vendors", vendorId);
   const vendorProfile = {
     vendorId,
@@ -71,6 +112,7 @@ export const approveVendorApplication = async (applicationId: string) => {
     approvedAt: serverTimestamp(),
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
+    // Flat fields for quick access in listings
     email: appData.email || "",
     name: appData.personal?.fullName || appData.personal?.legalName || "N/A",
     phone: appData.personal?.phone || "",
@@ -83,7 +125,16 @@ export const approveVendorApplication = async (applicationId: string) => {
     rating: 0,
     reviewCount: 0,
     bookingCount: 0,
-    totalEarnings: 0
+    totalEarnings: 0,
+    // Full nested application sections — required by admin drawers for detail views
+    personal: appData.personal || null,
+    business: appData.business || null,
+    services_data: appData.services || null,
+    serviceArea: appData.serviceArea || null,
+    experience: appData.experience || null,
+    verification: appData.verification || null,
+    payouts: appData.payouts || null,
+    availability: appData.availability || null,
   };
   
   await setDoc(vendorProfileRef, vendorProfile);

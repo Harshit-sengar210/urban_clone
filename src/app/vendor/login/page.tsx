@@ -27,17 +27,14 @@ export default function VendorLoginPage() {
     try {
       const provider = new GoogleAuthProvider();
       const userCredential = await signInWithPopup(auth, provider);
-      
+
       // Check vendor profile
       const vendorDoc = await getDoc(doc(db, "vendors", userCredential.user.uid));
-      if (vendorDoc.exists()) {
-        const status = vendorDoc.data()?.status;
-        if (status === "active" || status === "suspended") {
-          const keysToClear = Object.keys(localStorage).filter(k => k.startsWith("vendor_onboarding"));
-          keysToClear.forEach(k => localStorage.removeItem(k));
-          router.push("/vendor/dashboard");
-          return;
-        }
+      if (vendorDoc.exists() && vendorDoc.data()?.status === "active") {
+        const keysToClear = Object.keys(localStorage).filter(k => k.startsWith("vendor_onboarding"));
+        keysToClear.forEach(k => localStorage.removeItem(k));
+        router.push("/vendor/dashboard");
+        return;
       }
 
       // Check application status
@@ -57,7 +54,7 @@ export default function VendorLoginPage() {
           return;
         }
       }
-      
+
       // If no valid application or vendor doc
       await auth.signOut();
       setError("No vendor account found. Please sign up as a partner first.");
@@ -85,20 +82,17 @@ export default function VendorLoginPage() {
     }
 
     setIsLoading(true);
-    
+
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      
+
       // Check vendor profile
       const vendorDoc = await getDoc(doc(db, "vendors", userCredential.user.uid));
-      if (vendorDoc.exists()) {
-        const status = vendorDoc.data()?.status;
-        if (status === "active" || status === "suspended") {
-          const keysToClear = Object.keys(localStorage).filter(k => k.startsWith("vendor_onboarding"));
-          keysToClear.forEach(k => localStorage.removeItem(k));
-          router.push("/vendor/dashboard");
-          return;
-        }
+      if (vendorDoc.exists() && vendorDoc.data()?.status === "active") {
+        const keysToClear = Object.keys(localStorage).filter(k => k.startsWith("vendor_onboarding"));
+        keysToClear.forEach(k => localStorage.removeItem(k));
+        router.push("/vendor/dashboard");
+        return;
       }
 
       // Check application status
@@ -118,7 +112,7 @@ export default function VendorLoginPage() {
           return;
         }
       }
-      
+
       // If no valid application or vendor doc
       await auth.signOut();
       setError("No vendor account found. Please sign up as a partner first.");
@@ -193,14 +187,14 @@ export default function VendorLoginPage() {
               </div>
               <span className="text-lg font-bold text-slate-700">Manage Bookings</span>
             </div>
-            
+
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl bg-white shadow-sm border border-slate-100 flex items-center justify-center">
                 <TrendingUp className="w-6 h-6 text-green-500" />
               </div>
               <span className="text-lg font-bold text-slate-700">Track Earnings</span>
             </div>
-            
+
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl bg-white shadow-sm border border-slate-100 flex items-center justify-center">
                 <Users className="w-6 h-6 text-orange-500" />
@@ -231,7 +225,7 @@ export default function VendorLoginPage() {
         >
           <div className="w-full max-w-[420px]">
             <div className="bg-white border border-[var(--color-border)] shadow-xl shadow-black/5 rounded-[24px] p-8">
-              
+
               <div className="mb-8">
                 <h2 className="text-2xl md:text-3xl font-extrabold text-[var(--color-foreground)] tracking-tight mb-2">
                   Welcome, Partner
@@ -242,7 +236,7 @@ export default function VendorLoginPage() {
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-5" autoComplete="off">
-                
+
                 {/* Identifier Field */}
                 <div className="space-y-1.5">
                   <label className="text-sm font-semibold text-[var(--color-foreground)]" htmlFor="email">
@@ -280,8 +274,8 @@ export default function VendorLoginPage() {
                       <input type="checkbox" className="rounded border-slate-300 text-[var(--color-primary)] focus:ring-[var(--color-primary)]" />
                       Remember me
                     </label>
-                    <Link 
-                      href="/forgot-password" 
+                    <Link
+                      href="/forgot-password"
                       className="text-sm font-semibold text-[var(--color-primary)] hover:underline"
                     >
                       Forgot password?
@@ -297,8 +291,8 @@ export default function VendorLoginPage() {
                 )}
 
                 {/* Submit Button */}
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   className="w-full h-12 text-base font-semibold transition-all hover:-translate-y-0.5 shadow-lg shadow-primary/20"
                   disabled={isLoading}
                 >
@@ -321,7 +315,7 @@ export default function VendorLoginPage() {
                   New to UrbanClone?
                 </p>
                 <Link href="/vendor/signup" className="text-sm font-bold text-[var(--color-primary)] hover:underline inline-flex items-center group">
-                  Become a Partner 
+                  Become a Partner
                   <span className="ml-1 transition-transform group-hover:translate-x-1">→</span>
                 </Link>
               </div>

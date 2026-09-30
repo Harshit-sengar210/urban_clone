@@ -222,62 +222,76 @@ export default function VendorBookingsPage() {
   const handleModalConfirm = (data?: any) => {
     if (!actionBooking) return;
     setIsSubmittingModal(true);
-    
+
     setTimeout(() => {
-      setBookings(prev => prev.map(b => {
-        if (b.id !== actionBooking.booking.id) return b;
-        
-        let newStatus: BookingStatus = b.status;
-        if (actionBooking.action === "reject") newStatus = "rejected";
-        if (actionBooking.action === "cancel") newStatus = "cancelled";
-        if (actionBooking.action === "start") newStatus = "in_progress";
-        if (actionBooking.action === "complete") newStatus = "completed";
-        
-        // In a real app we'd save the reason
-        return { ...b, status: newStatus };
-      }));
-      
-      // Update selected booking if drawer is open
-      if (selectedBooking && selectedBooking.id === actionBooking.booking.id) {
-        let newStatus: BookingStatus = selectedBooking.status;
-        if (actionBooking.action === "reject") newStatus = "rejected";
-        if (actionBooking.action === "cancel") newStatus = "cancelled";
-        if (actionBooking.action === "start") newStatus = "in_progress";
-        if (actionBooking.action === "complete") newStatus = "completed";
-        setSelectedBooking({ ...selectedBooking, status: newStatus });
+      // ── Vendor Cancel → Re-queue for other vendors ─────────────────────────
+      // When a vendor cancels, we do NOT mark the booking as "cancelled" for the user.
+      // Instead we reset it to "pending" so another vendor can pick it up.
+      const isVendorCancel = actionBooking.action === "cancel";
+
+      const getNewStatus = (): BookingStatus => {
+        if (actionBooking.action === "reject")   return "rejected";
+        if (actionBooking.action === "cancel")   return "pending";   // ← re-queue!
+        if (actionBooking.action === "start")    return "in_progress";
+        if (actionBooking.action === "complete") return "completed";
+        return actionBooking.booking.status;
+      };
+
+      const newStatus = getNewStatus();
+
+      // Optimistic local update
+      setBookings(prev => prev.map(b =>
+        b.id !== actionBooking.booking.id ? b : { ...b, status: newStatus }
+      ));
+      if (selectedBooking?.id === actionBooking.booking.id) {
+        setSelectedBooking(prev => prev ? { ...prev, status: newStatus } : prev);
       }
 
-      // Actual database updates
-      import("firebase/firestore").then(({ updateDoc, doc }) => {
-        let newStatus: BookingStatus = actionBooking.booking.status;
-        if (actionBooking.action === "reject") newStatus = "rejected";
-        if (actionBooking.action === "cancel") newStatus = "cancelled";
-        if (actionBooking.action === "start") newStatus = "in_progress";
-        if (actionBooking.action === "complete") newStatus = "completed";
+      // Firestore update
+      import("firebase/firestore").then(({ updateDoc, doc, arrayUnion, serverTimestamp }) => {
+        const bookingRef = doc(db, "bookings", actionBooking.booking.id);
 
-        updateDoc(doc(db, "bookings", actionBooking.booking.id), {
-          status: newStatus,
-          ...(newStatus === "cancelled" || newStatus === "rejected" ? { cancellationReason: data || "" } : {}),
-          ...(newStatus === "in_progress" || newStatus === "completed" ? { vendorId: user?.uid, professional: user?.name || "Professional" } : {}),
-          ...(newStatus === "completed" && data ? {
-            paymentStatus: "paid",
-            paymentMethod: data.paymentType === "cash" ? "cod" : "upi",
-            amountCollected: Number(data.amountCollected) || 0,
-            paymentScreenshot: data.screenshotBase64 || null
-          } : {})
-        }).catch(err => console.error("Error updating booking", err));
+        if (isVendorCancel) {
+          // Re-queue: clear vendor assignment, log the cancellation history
+          updateDoc(bookingRef, {
+            status: "pending",
+            vendorId: null,
+            professional: "Assigning...",
+            vendorCancelHistory: arrayUnion({
+              vendorId: user?.uid || "",
+              vendorName: user?.name || "Vendor",
+              reason: data || "Vendor cancelled",
+              cancelledAt: new Date().toISOString(),
+            }),
+            lastVendorCancelledAt: serverTimestamp(),
+          }).catch(err => console.error("Error re-queuing booking", err));
+        } else {
+          updateDoc(bookingRef, {
+            status: newStatus,
+            ...(newStatus === "rejected" ? { cancellationReason: data || "" } : {}),
+            ...(newStatus === "in_progress" || newStatus === "completed"
+              ? { vendorId: user?.uid, professional: user?.name || "Professional" }
+              : {}),
+            ...(newStatus === "completed" && data ? {
+              paymentStatus: "paid",
+              paymentMethod: data.paymentType === "cash" ? "cod" : "upi",
+              amountCollected: Number(data.amountCollected) || 0,
+              paymentScreenshot: data.screenshotBase64 || null,
+            } : {}),
+          }).catch(err => console.error("Error updating booking", err));
+        }
       });
 
       setIsSubmittingModal(false);
-      
-      const toastMsgs = {
-        reject: "Booking rejected successfully.",
-        cancel: "Booking cancelled successfully.",
-        start: "Service started successfully.",
-        complete: "Booking marked as completed."
+
+      const toastMsgs: Record<string, string> = {
+        reject:   "Booking rejected. It will remain visible to you in your history.",
+        cancel:   "Booking released. We'll find another professional for the customer.",
+        start:    "Service started successfully.",
+        complete: "Booking marked as completed.",
       };
       showToast(toastMsgs[actionBooking.action]);
-      
+
       setActionBooking(null);
     }, 600);
   };
