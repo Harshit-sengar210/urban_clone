@@ -4,8 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
-class LoginScreen extends StatelessWidget {
-  const LoginScreen({super.key});
+class SignupScreen extends StatelessWidget {
+  const SignupScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -27,10 +27,10 @@ class LoginScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 20),
+              const SizedBox(height: 10),
               // Header
               const Text(
-                'Welcome to\nUrbanClone',
+                'Create an\nAccount',
                 style: TextStyle(
                   fontSize: 36,
                   fontWeight: FontWeight.w800,
@@ -40,7 +40,7 @@ class LoginScreen extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               Text(
-                'Sign in or sign up to access top-tier professional services.',
+                'Sign up to book home services with ease and manage your bookings.',
                 style: TextStyle(
                   fontSize: 16,
                   color: Colors.grey[600],
@@ -48,7 +48,31 @@ class LoginScreen extends StatelessWidget {
                 ),
               ),
               
-              const SizedBox(height: 48),
+              const SizedBox(height: 40),
+              
+              // Full Name Field
+              TextField(
+                decoration: InputDecoration(
+                  labelText: 'Full Name',
+                  labelStyle: TextStyle(color: Colors.grey[600]),
+                  filled: true,
+                  fillColor: Colors.grey[50],
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(color: Colors.grey[300]!),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(color: Colors.grey[300]!),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: const BorderSide(color: primaryDark, width: 2),
+                  ),
+                ),
+              ),
+              
+              const SizedBox(height: 16),
               
               // Email / Phone Field
               TextField(
@@ -71,10 +95,35 @@ class LoginScreen extends StatelessWidget {
                   ),
                 ),
               ),
+
+              const SizedBox(height: 16),
+              
+              // Password Field
+              TextField(
+                obscureText: true,
+                decoration: InputDecoration(
+                  labelText: 'Password',
+                  labelStyle: TextStyle(color: Colors.grey[600]),
+                  filled: true,
+                  fillColor: Colors.grey[50],
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(color: Colors.grey[300]!),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(color: Colors.grey[300]!),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: const BorderSide(color: primaryDark, width: 2),
+                  ),
+                ),
+              ),
               
               const SizedBox(height: 24),
               
-              // Login / Continue Button
+              // Sign Up Button
               SizedBox(
                 width: double.infinity,
                 height: 56,
@@ -85,9 +134,9 @@ class LoginScreen extends StatelessWidget {
                     elevation: 0,
                   ),
                   onPressed: () {
-                    context.push('/otp');
+                    context.go('/home');
                   },
-                  child: const Text('Continue', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700)),
+                  child: const Text('Sign Up', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700)),
                 ),
               ),
               
@@ -143,7 +192,7 @@ class LoginScreen extends StatelessWidget {
                     } catch (e) {
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Google Sign-In failed: $e')),
+                          SnackBar(content: Text('Google Sign-Up failed: $e')),
                         );
                       }
                     }
@@ -164,25 +213,25 @@ class LoginScreen extends StatelessWidget {
                         child: const Text('G', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 16, height: 1.1)),
                       ),
                       const SizedBox(width: 12),
-                      const Text('Continue with Google', style: TextStyle(color: primaryDark, fontSize: 16, fontWeight: FontWeight.w700)),
+                      const Text('Sign up with Google', style: TextStyle(color: primaryDark, fontSize: 16, fontWeight: FontWeight.w700)),
                     ],
                   ),
                 ),
               ),
               
-              const SizedBox(height: 48),
+              const SizedBox(height: 32),
               
-              // Sign Up Text
+              // Login Text
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text("Don't have an account? ", style: TextStyle(color: Colors.grey[600], fontSize: 15)),
+                  Text("Already have an account? ", style: TextStyle(color: Colors.grey[600], fontSize: 15)),
                   GestureDetector(
                     onTap: () {
-                      context.push('/signup');
+                      context.pop();
                     },
                     child: const Text(
-                      'Sign Up',
+                      'Login',
                       style: TextStyle(color: primaryDark, fontSize: 15, fontWeight: FontWeight.w800),
                     ),
                   ),

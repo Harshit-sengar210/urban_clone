@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "569721578340",
+    "project_id": "urban-clone-2e47d",
+    "storage_bucket": "urban-clone-2e47d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:569721578340:android:c49305c81b39afded31071",
+        "android_client_info": {
+          "package_name": "com.urbanclone.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "569721578340-1kfqo40m17psn3qog0bgpmivpejr885k.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC6kZyyq9i3AK3jE_I8G8N1NJOnjSZAsh8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "569721578340-1kfqo40m17psn3qog0bgpmivpejr885k.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

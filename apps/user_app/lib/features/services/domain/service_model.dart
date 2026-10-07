@@ -27,8 +27,8 @@ class ServiceModel {
     return ServiceModel(
       id: id,
       categoryId: map['categoryId']?.toString() ?? '',
-      subcategory: (map['subcategory'] != null && map['subcategory'].toString().isNotEmpty) ? map['subcategory'].toString() : (map['title']?.toString() ?? 'All'),
-      title: map['title']?.toString() ?? '',
+      subcategory: (map['subcategory'] != null && map['subcategory'].toString().isNotEmpty) ? map['subcategory'].toString() : (map['title']?.toString() ?? map['name']?.toString() ?? 'All'),
+      title: map['title']?.toString() ?? map['name']?.toString() ?? 'Service Name',
       description: map['description']?.toString() ?? '',
       price: _parseDouble(map['price']),
       duration: map['duration']?.toString() ?? '',

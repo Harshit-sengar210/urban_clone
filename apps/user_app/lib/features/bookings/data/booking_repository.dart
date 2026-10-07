@@ -32,7 +32,7 @@ class BookingRepository {
       imageUrl: data['imageUrl'] ?? 'https://via.placeholder.com/150',
       scheduledDate: (data['scheduledDate'] as Timestamp?)?.toDate() ?? DateTime.now(),
       address: data['address'] ?? 'Unknown Address',
-      professionalName: data['professionalName'],
+      professionalName: data['professionalName'] ?? data['professional'],
       professionalAvatar: data['professionalAvatar'],
       professionalRating: (data['professionalRating'] as num?)?.toDouble(),
       amount: (data['amount'] as num?)?.toDouble() ?? 0.0,
@@ -45,10 +45,13 @@ class BookingRepository {
 
   BookingStatus _parseBookingStatus(String? status) {
     switch (status) {
+      case 'pending': return BookingStatus.pendingAssignment;
       case 'pending_assignment': return BookingStatus.pendingAssignment;
       case 'assigned': return BookingStatus.assigned;
       case 'accepted': return BookingStatus.accepted;
       case 'confirmed': return BookingStatus.confirmed;
+      case 'on_the_way': return BookingStatus.confirmed; // Map web's on_the_way to confirmed
+      case 'in_progress': return BookingStatus.serviceStarted; // Map web's in_progress to serviceStarted
       case 'service_started': return BookingStatus.serviceStarted;
       case 'completed': return BookingStatus.completed;
       case 'cancelled': return BookingStatus.cancelled;

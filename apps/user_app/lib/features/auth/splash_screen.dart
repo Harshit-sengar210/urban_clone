@@ -21,7 +21,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     // Simulate auth check
     await Future.delayed(const Duration(seconds: 2));
     if (mounted) {
-      context.go('/home'); // Go to home for now
+      context.go('/onboarding');
     }
   }
 

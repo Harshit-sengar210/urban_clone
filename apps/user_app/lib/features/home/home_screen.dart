@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../../app/theme/app_colors.dart';
 import '../categories/categories_screen.dart';
 import '../bookings/presentation/screens/bookings_screen.dart';
+import '../profile/profile_screen.dart';
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -23,7 +24,7 @@ class _HomeScreenState extends State<HomeScreen> {
           _HomeContent(),
           BookingsScreen(),
           CategoriesScreen(),
-          Center(child: Text('Profile')),
+          ProfileScreen(),
         ],
       ),
       extendBody: true, // For floating bottom nav
@@ -33,7 +34,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildBottomNav() {
     return Container(
-      margin: const EdgeInsets.only(left: 24, right: 24, bottom: 24),
+      margin: const EdgeInsets.only(left: 16, right: 16, bottom: 20),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(32),
@@ -50,12 +51,12 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildNavItem(0, Icons.home_outlined, Icons.home, 'Home'),
-              _buildNavItem(1, Icons.calendar_today_outlined, Icons.calendar_today, 'Bookings'),
-              _buildNavItem(2, Icons.grid_view, Icons.grid_view_rounded, 'Categories'),
-              _buildNavItem(3, Icons.person_outline, Icons.person, 'Profile'),
+              Expanded(child: _buildNavItem(0, Icons.home_outlined, Icons.home, 'Home')),
+              Expanded(child: _buildNavItem(1, Icons.calendar_today_outlined, Icons.calendar_today, 'Bookings')),
+              Expanded(child: _buildNavItem(2, Icons.grid_view, Icons.grid_view_rounded, 'Categories')),
+              Expanded(child: _buildNavItem(3, Icons.person_outline, Icons.person, 'Profile')),
             ],
           ),
         ),
@@ -70,26 +71,31 @@ class _HomeScreenState extends State<HomeScreen> {
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
         decoration: BoxDecoration(
           color: isSelected ? AppColors.primaryLight.withValues(alpha: 0.1) : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
               isSelected ? filledIcon : outlineIcon,
               color: isSelected ? AppColors.primary : AppColors.textLight,
-              size: 24,
+              size: 22,
             ),
             if (isSelected) ...[
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: const TextStyle(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
+              const SizedBox(width: 4),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
                 ),
               ),
             ]
@@ -179,12 +185,12 @@ class _HomeContent extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Text('Home', style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600, color: AppColors.text)),
+                    Text('Live Location', style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600, color: AppColors.text)),
                     const SizedBox(width: 4),
                     const Icon(Icons.keyboard_arrow_down, size: 16, color: AppColors.textLight),
                   ],
                 ),
-                Text('Sector 45, Gurugram', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.textLight)),
+                Text('123 Main Street, NY', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.textLight)),
               ],
             ),
           ],
@@ -459,7 +465,7 @@ class _HomeContent extends StatelessWidget {
       },
       {
         'name': 'AC Service & Repair',
-        'image': 'https://images.unsplash.com/photo-1617260551061-9f20e4010260?q=80&w=800&auto=format&fit=crop',
+        'image': 'https://images.unsplash.com/photo-1581092921461-eab62e97a780?q=80&w=800&auto=format&fit=crop',
         'rating': '4.7',
         'reviews': '1.8k',
         'price': '₹399',

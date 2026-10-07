@@ -81,7 +81,11 @@ service cloud.firestore {
       allow list: if isAuth();
 
       // Customers (and admins) create bookings. Let any authenticated user create their own.
-      allow create: if isAuth() && (request.resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuth() && (
+        request.resource.data.userId == request.auth.uid || 
+        request.resource.data.customerId == request.auth.uid || 
+        isAdmin()
+      );
 
       // Customer can update their own booking (e.g. cancel).
       // Vendor can update their assigned booking (e.g. mark complete).

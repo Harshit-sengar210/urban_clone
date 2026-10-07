@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../domain/booking_model.dart';
 import 'package:intl/intl.dart';
@@ -13,18 +14,81 @@ class BookingDetailsScreen extends StatelessWidget {
     this.booking,
   });
 
+  BookingModel _fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    return BookingModel(
+      id: doc.id,
+      serviceName: data['serviceName'] ?? 'Unknown Service',
+      imageUrl: data['imageUrl'] ?? 'https://via.placeholder.com/150',
+      scheduledDate: (data['scheduledDate'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      address: data['address'] ?? 'Unknown Address',
+      professionalName: data['professionalName'] ?? data['professional'],
+      professionalRating: (data['professionalRating'] as num?)?.toDouble(),
+      amount: (data['amount'] as num?)?.toDouble() ?? 0.0,
+      status: _parseBookingStatus(data['status']),
+      paymentStatus: _parsePaymentStatus(data['paymentStatus']),
+    );
+  }
+
+  BookingStatus _parseBookingStatus(String? status) {
+    switch (status) {
+      case 'pending': return BookingStatus.pendingAssignment;
+      case 'pending_assignment': return BookingStatus.pendingAssignment;
+      case 'assigned': return BookingStatus.assigned;
+      case 'accepted': return BookingStatus.accepted;
+      case 'confirmed': return BookingStatus.confirmed;
+      case 'on_the_way': return BookingStatus.confirmed; 
+      case 'in_progress': return BookingStatus.serviceStarted;
+      case 'service_started': return BookingStatus.serviceStarted;
+      case 'completed': return BookingStatus.completed;
+      case 'cancelled': return BookingStatus.cancelled;
+      default: return BookingStatus.pendingAssignment;
+    }
+  }
+
+  PaymentStatus _parsePaymentStatus(String? status) {
+    switch (status) {
+      case 'paid': return PaymentStatus.paid;
+      default: return PaymentStatus.pending;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    // If booking is null, we would ideally fetch it here.
-    // For this UI scaffolding task, we'll just handle the non-null case.
-    if (booking == null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Booking Details')),
-        body: const Center(child: CircularProgressIndicator()),
-      );
-    }
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance.collection('bookings').doc(bookingId).snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting && booking == null) {
+          return Scaffold(
+            appBar: AppBar(title: const Text('Booking Details')),
+            body: const Center(child: CircularProgressIndicator()),
+          );
+        }
+        if (snapshot.hasError) {
+          return Scaffold(
+            appBar: AppBar(title: const Text('Booking Details')),
+            body: const Center(child: Text('Error loading booking')),
+          );
+        }
+        
+        BookingModel? displayBooking = booking;
+        if (snapshot.hasData && snapshot.data!.exists) {
+          displayBooking = _fromFirestore(snapshot.data!);
+        }
 
-    final b = booking!;
+        if (displayBooking == null) {
+          return Scaffold(
+            appBar: AppBar(title: const Text('Booking Details')),
+            body: const Center(child: Text('Booking not found')),
+          );
+        }
+        
+        return _buildContent(context, displayBooking);
+      },
+    );
+  }
+
+  Widget _buildContent(BuildContext context, BookingModel b) {
     final dateFormat = DateFormat('EEEE, dd MMM yyyy');
     final timeFormat = DateFormat('hh:mm a');
 
@@ -93,6 +157,15 @@ class BookingDetailsScreen extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16),
+            const Divider(height: 1, color: AppColors.border),
+            const SizedBox(height: 24),
+
+            // Live Status Timeline
+            const Text('BOOKING STATUS', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppColors.textLight, letterSpacing: 1.2)),
+            const SizedBox(height: 16),
+            _buildTimeline(b.status),
+            
+            const SizedBox(height: 24),
             const Divider(height: 1, color: AppColors.border),
             const SizedBox(height: 16),
             
@@ -222,6 +295,92 @@ class BookingDetailsScreen extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildTimeline(BookingStatus currentStatus) {
+    // Define the sequence of major statuses
+    final steps = [
+      {'status': BookingStatus.pendingAssignment, 'title': 'Booking Confirmed'},
+      {'status': BookingStatus.assigned, 'title': 'Professional Assigned'},
+      {'status': BookingStatus.confirmed, 'title': 'On the Way'},
+      {'status': BookingStatus.serviceStarted, 'title': 'Service Started'},
+      {'status': BookingStatus.completed, 'title': 'Service Completed'},
+    ];
+
+    // Find current progress
+    int currentIndex = 0;
+    if (currentStatus == BookingStatus.assigned) currentIndex = 1;
+    if (currentStatus == BookingStatus.confirmed) currentIndex = 2; // confirmed/on the way
+    if (currentStatus == BookingStatus.serviceStarted) currentIndex = 3;
+    if (currentStatus == BookingStatus.completed) currentIndex = 4;
+    
+    // Handle cancelled/rejected edge cases
+    if (currentStatus == BookingStatus.cancelled || currentStatus == BookingStatus.rejected || currentStatus == BookingStatus.noShow) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(color: Colors.red.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
+        child: Row(
+          children: [
+            const Icon(Icons.cancel_outlined, color: Colors.red),
+            const SizedBox(width: 12),
+            Text('Booking ${_getStatusText(currentStatus)}', style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      children: List.generate(steps.length, (index) {
+        final isCompleted = index <= currentIndex;
+        final isLast = index == steps.length - 1;
+        final step = steps[index];
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Column(
+              children: [
+                Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: isCompleted ? AppColors.primary : Colors.transparent,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isCompleted ? AppColors.primary : AppColors.border,
+                      width: 2,
+                    ),
+                  ),
+                  child: isCompleted
+                      ? const Icon(Icons.check, size: 14, color: Colors.white)
+                      : null,
+                ),
+                if (!isLast)
+                  Container(
+                    width: 2,
+                    height: 30,
+                    color: isCompleted ? AppColors.primary : AppColors.border,
+                  ),
+              ],
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Text(
+                  step['title'] as String,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: isCompleted ? FontWeight.bold : FontWeight.normal,
+                    color: isCompleted ? AppColors.text : AppColors.textLight,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      }),
     );
   }
 

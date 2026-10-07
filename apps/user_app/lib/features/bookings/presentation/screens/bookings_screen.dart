@@ -40,9 +40,22 @@ class _BookingsScreenState extends ConsumerState<BookingsScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
-                            'My Bookings',
-                            style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: AppColors.text),
+                          Row(
+                            children: [
+                              if (context.canPop()) ...[
+                                IconButton(
+                                  icon: const Icon(Icons.arrow_back, color: AppColors.text),
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
+                                  onPressed: () => context.pop(),
+                                ),
+                                const SizedBox(width: 12),
+                              ],
+                              const Text(
+                                'My Bookings',
+                                style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: AppColors.text),
+                              ),
+                            ],
                           ),
                           Container(
                             padding: const EdgeInsets.all(8),
